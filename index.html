@@ -98,17 +98,18 @@
         }
         #errorMsg {
             position: absolute;
-            top: 60%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(255,0,0,0.7);
+            top: 20px; /* Adjusted position */
+            right: 20px; /* Adjusted position */
+            transform: none; /* Remove transform */
+            background-color: rgba(255,0,0,0.8); /* Slightly less transparent */
             color: white;
             padding: 15px;
             border-radius: 8px;
             z-index: 100;
             display: none;
             text-align: center;
-            max-width: 80%;
+            max-width: 300px; /* Limit width */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Add a subtle shadow */
         }
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -119,6 +120,7 @@
     <div id="ui">
         <h2>Cubetris 4x4</h2>
         <p>Nivel: <span id="levelDisplay">1</span></p>
+        <p>Ajuste Fino: <span id="fineTuneStatus">DESACTIVADO</span></p>
         <p>Instrucciones:</p>
         <ul>
             <li>E/D: Mover pieza en X</li>
@@ -135,6 +137,7 @@
             <button id="scatterBtn" class="control-btn">Dispersar Piezas</button>
             <button id="checkBtn" class="control-btn">Verificar Cubo</button>
             <button id="solveBtn" class="control-btn solve-btn">Resolver Puzzle</button>
+            <button id="resetCameraBtn" class="control-btn">Reiniciar Cámara</button>
         </div>
     </div>
     <div id="levelComplete">
@@ -234,6 +237,10 @@
             gameState.camera.upperRadiusLimit = 25;
             gameState.camera.attachControl(gameState.canvas, true);
             gameState.camera.inputs.attached.keyboard.detachControl();
+            
+            // Optional: Adjust camera feel
+            gameState.camera.inertia = 0.8; // default is 0.9, lower for snappier
+            gameState.camera.wheelPrecision = 50; // default is 3, higher for slower zoom
         }
 
         function setupLights() {
@@ -250,6 +257,8 @@
             gameState.scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.2, 1);
             gameState.scene.autoClear = true;
             gameState.scene.autoClearDepthAndStencil = true;
+            gameState.scene.postProcessRenderPipelineManager = new BABYLON.PostProcessRenderPipelineManager();
+            gameState.scene.postProcessRenderPipelineManager.addPipeline(new BABYLON.OutlineRenderer(gameState.scene));
         }
 
         function setupUI() {
@@ -257,6 +266,7 @@
             document.getElementById('checkBtn').addEventListener('click', checkPuzzleComplete);
             document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
             document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
+            document.getElementById('resetCameraBtn').addEventListener('click', resetCamera); // Add this line
         }
 
         function startLevel(level) {
@@ -274,6 +284,7 @@
             if (gameState.targetCubeSize > 6) gameState.targetCubeSize = 6;
             
             document.getElementById('levelDisplay').textContent = gameState.currentLevel;
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVADO' : 'DESACTIVADO'; // Update fine tune status
             document.getElementById('levelComplete').style.display = 'none';
             document.getElementById('solveBtn').disabled = false;
             
@@ -429,6 +440,25 @@
             blockPositions.forEach(pos => center.addInPlace(pos));
             center.scaleInPlace(1.0 / blockPositions.length);
             
+            // Define two materials for each piece: normal and darker for outer blocks
+            const normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
+            normalMaterial.diffuseColor = COLORS[pieceIndex % COLORS.length];
+            normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+            normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+
+            const darkerColor = COLORS[pieceIndex % COLORS.length].scale(0.6); // Make it 40% darker
+            const darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
+            darkerMaterial.diffuseColor = darkerColor;
+            darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+            darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+
+            // Store the assembled position of the piece itself
+            const pieceAssembledGlobalPosition = new BABYLON.Vector3(
+                center.x * gameState.gridSize,
+                center.y * gameState.gridSize,
+                center.z * gameState.gridSize
+            );
+            
             // Crear bloques
             blockPositions.forEach((pos, index) => {
                 const block = BABYLON.MeshBuilder.CreateBox(
@@ -442,11 +472,22 @@
                 block.position = relativePos.clone();
                 piece.originalPositions.push(relativePos.clone());
                 
-                const material = new BABYLON.StandardMaterial(`blockMat${pieceIndex}_${index}`, gameState.scene);
-                material.diffuseColor = COLORS[pieceIndex % COLORS.length];
-                material.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-                material.emissiveColor = new BABYLON.Color3(0, 0, 0); // Inicialmente sin emisión
-                block.material = material;
+                // Determine if this block is on the outer layer of the final cube
+                const absoluteBlockX = pos.x;
+                const absoluteBlockY = pos.y;
+                const absoluteBlockZ = pos.z;
+                
+                const halfTargetSize = gameState.targetCubeSize / 2;
+
+                let isOuterBlock = false;
+                // Check if the block is on the boundary in any dimension
+                if (Math.abs(absoluteBlockX) === halfTargetSize - 0.5 ||
+                    Math.abs(absoluteBlockY) === halfTargetSize - 0.5 ||
+                    Math.abs(absoluteBlockZ) === halfTargetSize - 0.5) {
+                    isOuterBlock = true;
+                }
+
+                block.material = isOuterBlock ? darkerMaterial : normalMaterial;
                 
                 block.isPickable = true; 
                 block.pieceIndex = pieceIndex; 
@@ -455,11 +496,7 @@
             });
             
             // Guardar posición ensamblada
-            piece.assembledPosition = new BABYLON.Vector3(
-                center.x * gameState.gridSize,
-                center.y * gameState.gridSize,
-                center.z * gameState.gridSize
-            );
+            piece.assembledPosition = pieceAssembledGlobalPosition;
             
             gameState.pieces.push(piece);
             return piece;
@@ -546,10 +583,13 @@
         function selectPiece(index, isDoubleClick = false) {
             if (gameState.isAnimating || index < 0 || index >= gameState.pieces.length) return;
             
-            // Deseleccionar actual y resetear emissive color
+            // Deseleccionar actual
             if (gameState.pieces[gameState.selectedPieceIndex]) {
                 gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
-                    block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                    block.renderOutline = false; // Disable outline for previously selected
+                    block.outlineColor = BABYLON.Color3.Black(); // Reset to default
+                    block.outlineWidth = 0; // Reset to default
+                    block.material.emissiveColor = new BABYLON.Color3(0, 0, 0); // Reset emissive
                 });
             }
             
@@ -563,10 +603,21 @@
 
             // Seleccionar nueva pieza
             gameState.selectedPieceIndex = index;
+            const selectedPiece = gameState.pieces[gameState.selectedPieceIndex];
+            
             const emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
-            gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
+            const outlineColor = gameState.isFineTuneMode ? new BABYLON.Color3(1, 1, 0) : new BABYLON.Color3(0, 1, 1); // Yellow for fine-tune, Cyan otherwise
+            const outlineWidth = gameState.isFineTuneMode ? 0.02 : 0.01; // Thicker for fine-tune
+
+            selectedPiece.blocks.forEach(block => {
                 block.material.emissiveColor = emissiveColor;
+                block.renderOutline = true; // Enable outline
+                block.outlineColor = outlineColor;
+                block.outlineWidth = outlineWidth;
             });
+
+            // Update UI for fine-tune mode
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVADO' : 'DESACTIVADO';
         }
 
         function toggleFineTuneMode() {
@@ -576,10 +627,16 @@
             const selectedPiece = gameState.pieces[gameState.selectedPieceIndex];
             if (selectedPiece) {
                 const emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
+                const outlineColor = gameState.isFineTuneMode ? new BABYLON.Color3(1, 1, 0) : new BABYLON.Color3(0, 1, 1);
+                const outlineWidth = gameState.isFineTuneMode ? 0.02 : 0.01;
                 selectedPiece.blocks.forEach(block => {
                     block.material.emissiveColor = emissiveColor;
+                    block.renderOutline = true;
+                    block.outlineColor = outlineColor;
+                    block.outlineWidth = outlineWidth;
                 });
             }
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVADO' : 'DESACTIVADO'; // Update UI
         }
 
 
@@ -591,7 +648,7 @@
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             
             // Determinar la cantidad de desplazamiento
-            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 4 : gameState.gridSize; // Cambiado a /4
+            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 16 : gameState.gridSize; // Cambiado a /16 para mayor precisión
 
             switch (direction) {
                 case 'up': 
@@ -640,7 +697,7 @@
                     newPosition.z + block.position.z
                 );
                 // Redondear a la precisión de la cuadrícula para las comparaciones de colisión (ahora a la de 1/4 de la unidad)
-                const precisionFactor = gameState.gridSize / 4; 
+                const precisionFactor = gameState.gridSize / 4;
                 const posKey = `${Math.round(globalPos.x / precisionFactor) * precisionFactor}_${Math.round(globalPos.y / precisionFactor) * precisionFactor}_${Math.round(globalPos.z / precisionFactor) * precisionFactor}`;
                 pieceBlocksPositions.add(posKey);
             });
@@ -822,25 +879,114 @@
         }
 
         function checkPuzzleComplete() {
-            if (!gameState.isScattered) return;
+            if (!gameState.isScattered) return; // Solo verificar si las piezas están dispersas y siendo ensambladas
+
+            const targetSize = gameState.targetCubeSize;
+            const halfSize = (targetSize * gameState.gridSize) / 2; // Tamaño real en unidades de escena
+            const boundaryTolerance = 0.25 * gameState.gridSize; // Tolerancia aumentada a 1/4 de una unidad de cuadrícula
+
+            // Arrays para rastrear piezas con errores
+            const outOfBoundsPieces = new Set();
+            const overlappingPieces = new Set();
             
-            let allCorrect = true;
-            // Aumentar la tolerancia para permitir la alineación fina
-            const tolerance = 0.05; // Ajustado para ser un poco más indulgente con el ajuste fino
-            
-            for (const piece of gameState.pieces) {
-                if (!piece.position.equalsWithEpsilon(piece.assembledPosition, tolerance) ||
-                    Math.abs(piece.rotation - piece.assembledRotation) > tolerance) {
-                    allCorrect = false;
-                    break;
+            // Crear una cuadrícula 3D para rastrear las posiciones ocupadas dentro del cubo objetivo
+            const occupiedGrid = new Map(); // Clave: "x_y_z", Valor: BABYLON.Mesh | null (bloque si está ocupado, null si está vacío)
+
+            // Inicializar la cuadrícula con valores nulos
+            for (let i = 0; i < targetSize; i++) {
+                for (let j = 0; j < targetSize; j++) {
+                    for (let k = 0; k < targetSize; k++) {
+                        occupiedGrid.set(`${i}_${j}_${k}`, null); // Inicializar como vacío
+                    }
                 }
             }
             
-            if (allCorrect) {
-                document.getElementById('levelComplete').style.display = 'block';
-            } else {
-                showError("El cubo no está correctamente ensamblado");
+            const expectedTotalBlocks = targetSize * targetSize * targetSize;
+            let currentBlockCount = 0;
+            let foundError = false; // Flag para saber si se encontró algún tipo de error
+
+            // Iterar a través de todas las piezas y sus bloques para poblar la cuadrícula ocupada
+            for (const piece of gameState.pieces) {
+                for (const block of piece.blocks) {
+                    const rotatedBlockLocalPos = block.position; 
+
+                    const actualBlockGlobalX = piece.position.x + rotatedBlockLocalPos.x;
+                    const actualBlockGlobalY = piece.position.y + rotatedBlockLocalPos.y;
+                    const actualBlockGlobalZ = piece.position.z + rotatedBlockLocalPos.z;
+
+                    // Verificar si el bloque está dentro de los límites del cubo objetivo con tolerancia
+                    // El cubo objetivo va de -halfSize a +halfSize.
+                    if (actualBlockGlobalX < -halfSize - boundaryTolerance || actualBlockGlobalX > halfSize + boundaryTolerance ||
+                        actualBlockGlobalY < -halfSize - boundaryTolerance || actualBlockGlobalY > halfSize + boundaryTolerance ||
+                        actualBlockGlobalZ < -halfSize - boundaryTolerance || actualBlockGlobalZ > halfSize + boundaryTolerance) {
+                        
+                        outOfBoundsPieces.add(piece);
+                        foundError = true;
+                        continue; // No retornar, seguir verificando otros bloques
+                    }
+
+                    // Convertir coordenadas de escena a coordenadas de cuadrícula indexadas en 0
+                    // Redondear a la unidad de cuadrícula más cercana.
+                    const gridX = Math.round(actualBlockGlobalX / gameState.gridSize + (targetSize / 2) - 0.5);
+                    const gridY = Math.round(actualBlockGlobalY / gameState.gridSize + (targetSize / 2) - 0.5);
+                    const gridZ = Math.round(actualBlockGlobalZ / gameState.gridSize + (targetSize / 2) - 0.5);
+                    
+                    const posKey = `${gridX}_${gridY}_${gridZ}`;
+
+                    // Verificar si la posición de la cuadrícula es válida (dentro de los límites 0 a targetSize-1)
+                    if (gridX < 0 || gridX >= targetSize ||
+                        gridY < 0 || gridY >= targetSize ||
+                        gridZ < 0 || gridZ >= targetSize) {
+                        // Este caso también indica que está fuera de límites, aunque sea un error de lógica interna
+                        outOfBoundsPieces.add(piece);
+                        foundError = true;
+                        continue; // No retornar, seguir verificando otros bloques
+                    }
+
+                    if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) { // La posición ya está ocupada, significa una superposición
+                        const existingBlock = occupiedGrid.get(posKey);
+                        const existingPiece = gameState.pieces[existingBlock.pieceIndex];
+                        
+                        overlappingPieces.add(piece);
+                        overlappingPieces.add(existingPiece);
+                        foundError = true;
+                        continue; // No retornar, seguir verificando otros bloques
+                    } else {
+                        occupiedGrid.set(posKey, block); // Marcar como ocupado por este bloque
+                        currentBlockCount++;
+                    }
+                }
             }
+
+            // Después de verificar todas las piezas y bloques, reportar los errores
+            if (outOfBoundsPieces.size > 0) {
+                showError("¡Una o más piezas están fuera del cubo cuadrícula!");
+                outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0))); // Rojo para fuera de límites
+            } else if (overlappingPieces.size > 0) {
+                showError("¡Hay bloques superpuestos!");
+                overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0.5, 0))); // Naranja para superposición
+            } else if (currentBlockCount !== expectedTotalBlocks) {
+                showError("El cubo no está correctamente ensamblado. Faltan bloques o están fuera de lugar.");
+            } else {
+                // Si no se encontraron errores y el conteo de bloques es correcto
+                document.getElementById('levelComplete').style.display = 'block';
+            }
+        }
+
+        // Función auxiliar para resaltar una pieza
+        function highlightPiece(pieceToHighlight, color, duration = 500) {
+            const originalEmissiveColors = pieceToHighlight.blocks.map(b => b.material.emissiveColor.clone());
+            pieceToHighlight.blocks.forEach(b => b.material.emissiveColor = color);
+            setTimeout(() => {
+                pieceToHighlight.blocks.forEach((b, i) => {
+                    // Restaurar el color emisivo original, considerando si es la pieza actualmente seleccionada
+                    if (pieceToHighlight.index === gameState.selectedPieceIndex) {
+                        b.material.emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
+                    } else {
+                        b.material.emissiveColor = originalEmissiveColors[i]; 
+                    }
+                });
+            }, duration);
         }
 
         function showError(message) {
@@ -856,6 +1002,14 @@
         function nextLevel() {
             gameState.currentLevel++;
             startLevel(gameState.currentLevel);
+        }
+
+        function resetCamera() {
+            // Reset camera to its initial state
+            gameState.camera.alpha = -Math.PI / 2;
+            gameState.camera.beta = Math.PI / 3;
+            gameState.camera.radius = 20;
+            gameState.camera.setTarget(BABYLON.Vector3.Zero());
         }
 
         function setupControls() {
@@ -929,10 +1083,14 @@
                     // Clic en el fondo o en un mesh no pickable, deselecciona y desactiva fine tune
                     if (gameState.pieces[gameState.selectedPieceIndex]) {
                         gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
-                            block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                            block.renderOutline = false; // Disable outline for previously selected
+                            block.outlineColor = BABYLON.Color3.Black(); // Reset to default
+                            block.outlineWidth = 0; // Reset to default
+                            block.material.emissiveColor = new BABYLON.Color3(0, 0, 0); // Reset emissive
                         });
                     }
                     gameState.isFineTuneMode = false;
+                    document.getElementById('fineTuneStatus').textContent = 'DESACTIVADO'; // Update UI
                     // No hay pieza seleccionada, o puedes optar por mantener la última seleccionada pero sin resaltado.
                     // Para este juego, la deselección no está definida, así que mantendremos el último índice seleccionado
                     // pero visualmente no resaltado.

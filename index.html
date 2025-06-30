@@ -145,6 +145,13 @@
         .reset-btn:hover {
             background-color: #0056b3;
         }
+        /* New button style for "Its Ok for Me" */
+        .ok-btn {
+            background-color: #FFC107; /* Yellow */
+        }
+        .ok-btn:hover {
+            background-color: #e0a800;
+        }
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
@@ -176,6 +183,7 @@
                 <button class="control-btn check-btn" id="btnCheck">V (Verificar)</button>
                 <button class="control-btn reset-btn" id="btnReset">Reiniciar</button>
             </div>
+            <button class="control-btn ok-btn" id="btnItsOk">Its Ok for Me</button>
             <div class="control-row">
                 <button class="control-btn" id="btnE">E (Der. X)</button>
                 <button class="control-btn" id="btnT">T (Arr. Y)</button>
@@ -320,6 +328,7 @@
             document.getElementById('btnScatter').addEventListener('click', scatterPieces);
             document.getElementById('btnCheck').addEventListener('click', checkPuzzleComplete);
             document.getElementById('btnReset').addEventListener('click', resetGame); // Event listener for new reset button
+            document.getElementById('btnItsOk').addEventListener('click', checkProximityAndOverlap); // New button for proximity and overlap
             document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
             document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
             document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
@@ -1045,6 +1054,68 @@
             }
         }
 
+        function checkProximityAndOverlap() {
+            if (!gameState.isScattered) {
+                showError("¡Las piezas no están dispersas! Usa el botón 'Dispersar' primero.");
+                return;
+            }
+
+            const targetSize = gameState.targetCubeSize;
+            const halfSize = (targetSize * gameState.gridSize) / 2;
+            const proximityThreshold = gameState.gridSize; // "Menor de un cubo de largo"
+
+            let hasOverlap = false;
+            let isTooFar = false;
+
+            const occupiedGrid = new Map(); // Para detectar solapamientos
+
+            // Iterar a través de todas las piezas y sus bloques
+            for (const piece of gameState.pieces) {
+                for (const block of piece.blocks) {
+                    const rotatedBlockLocalPos = block.position; 
+
+                    const actualBlockGlobalX = piece.position.x + rotatedBlockLocalPos.x;
+                    const actualBlockGlobalY = piece.position.y + rotatedBlockLocalPos.y;
+                    const actualBlockGlobalZ = piece.position.z + rotatedBlockLocalPos.z;
+
+                    // Proximity Check
+                    if (actualBlockGlobalX < -halfSize - proximityThreshold || actualBlockGlobalX > halfSize + proximityThreshold ||
+                        actualBlockGlobalY < -halfSize - proximityThreshold || actualBlockGlobalY > halfSize + proximityThreshold ||
+                        actualBlockGlobalZ < -halfSize - proximityThreshold || actualBlockGlobalZ > halfSize + proximityThreshold) {
+                        isTooFar = true;
+                        highlightPiece(piece, new BABYLON.Color3(1, 0.5, 0)); // Naranja para "demasiado lejos"
+                        // Continue to check for other errors on this block/piece
+                    }
+
+                    // Overlap Check (using a coarser grid for overlap, consistent with movement/collision)
+                    const precisionFactor = gameState.gridSize / 4; // Use same precision as checkCollision
+                    const gridX = Math.round(actualBlockGlobalX / precisionFactor) * precisionFactor;
+                    const gridY = Math.round(actualBlockGlobalY / precisionFactor) * precisionFactor;
+                    const gridZ = Math.round(actualBlockGlobalZ / precisionFactor) * precisionFactor;
+                    
+                    const posKey = `${gridX}_${gridY}_${gridZ}`;
+
+                    if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) {
+                        hasOverlap = true;
+                        highlightPiece(piece, new BABYLON.Color3(1, 0, 0)); // Rojo para "superpuesto"
+                        const existingPiece = gameState.pieces[occupiedGrid.get(posKey).pieceIndex];
+                        highlightPiece(existingPiece, new BABYLON.Color3(1, 0, 0));
+                    } else {
+                        occupiedGrid.set(posKey, block);
+                    }
+                }
+            }
+
+            if (hasOverlap) {
+                showError("¡Hay bloques superpuestos!");
+            } else if (isTooFar) {
+                showError("¡Una o más piezas están demasiado lejos del cubo!");
+            } else {
+                nextLevel(); // Advance to the next level if all checks pass
+            }
+        }
+
+
         // Función auxiliar para resaltar una pieza
         function highlightPiece(pieceToHighlight, color, duration = 500) {
             const originalEmissiveColors = pieceToHighlight.blocks.map(b => b.material.emissiveColor.clone());
@@ -1096,7 +1167,8 @@
                 ' ': 'change',
                 'm': 'toggleFineTune',
                 'd': 'scatter', // New 'd' for scatter
-                'v': 'check'    // New 'v' for check
+                'v': 'check',    // New 'v' for check
+                'k': 'okForMe' // New keybind for "Its Ok for Me" button
             };
             
             document.addEventListener('keydown', (e) => {
@@ -1109,6 +1181,8 @@
                     scatterPieces();
                 } else if (action === 'check') {
                     checkPuzzleComplete();
+                } else if (action === 'okForMe') { // Handle new keybind
+                    checkProximityAndOverlap();
                 } else {
                     switch (action) {
                         case 'up':

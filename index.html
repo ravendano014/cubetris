@@ -1,2 +1,961 @@
+<!DOCTYPE html>
 <html>
+<head>
+    <meta charset="utf-8">
+    <title>Cubetris - Versión Completa con Solucionador</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            touch-action: none;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            width: 250px;
+            z-index: 10;
+            user-select: none;
+        }
+        #levelComplete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            width: 300px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 8px 4px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #controls {
+            margin-top: 15px;
+        }
+        .control-btn {
+            background-color: #2196F3;
+        }
+        .control-btn:hover {
+            background-color: #0b7dda;
+        }
+        .solve-btn {
+            background-color: #9C27B0;
+            margin-top: 10px;
+        }
+        .solve-btn:hover {
+            background-color: #7B1FA2;
+        }
+        h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        #errorMsg {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+            display: none;
+            text-align: center;
+            max-width: 80%;
+        }
+    </style>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <div id="ui">
+        <h2>Cubetris 4x4</h2>
+        <p>Nivel: <span id="levelDisplay">1</span></p>
+        <p>Instrucciones:</p>
+        <ul>
+            <li>Click: Seleccionar pieza</li>
+            <li>Doble click + arrastre: Ajuste fino de posición</li>
+            <li>E/D: Mover pieza en X</li>
+            <li>T/G: Mover pieza en Y</li>
+            <li>Q/W: Mover pieza en Z</li>
+            <li>R: Rotar pieza</li>
+            <li>Espacio: Cambiar pieza</li>
+        </ul>
+        
+        <div id="controls">
+            <button id="scatterBtn" class="control-btn">Dispersar Piezas</button>
+            <button id="checkBtn" class="control-btn">Verificar Cubo</button>
+            <button id="solveBtn" class="control-btn solve-btn">Resolver Puzzle</button>
+        </div>
+    </div>
+    <div id="levelComplete">
+        <h2>¡Nivel completado!</h2>
+        <p>Has ensamblado correctamente el cubo.</p>
+        <button id="nextLevelBtn">Siguiente nivel</button>
+    </div>
+    <div id="errorMsg"></div>
+
+    <script>
+        // Variables globales optimizadas
+        const gameState = {
+            canvas: null,
+            engine: null,
+            scene: null,
+            camera: null,
+            currentLevel: 1,
+            pieces: [],
+            selectedPieceIndex: 0,
+            targetCubeSize: 4,
+            isAnimating: false,
+            gridSize: 1.0,
+            isScattered: false,
+            animationFrame: null,
+            referenceGridSize: 20, // Tamaño de la cuadrícula de referencia
+            isFineAdjusting: false,
+            adjustStartPosition: null,
+            adjustStartPiecePosition: null,
+            lastClickTime: 0,
+            fineAdjustFactor: 0.1 // Factor de ajuste fino (10% del movimiento normal)
+        };
+
+        // Constantes
+        const COLORS = [
+            new BABYLON.Color3(1, 0, 0),    // Rojo
+            new BABYLON.Color3(0, 0, 1),    // Azul
+            new BABYLON.Color3(0, 1, 0),    // Verde
+            new BABYLON.Color3(1, 1, 0),    // Amarillo
+            new BABYLON.Color3(1, 0, 1),    // Magenta
+            new BABYLON.Color3(0, 1, 1),    // Cian
+            new BABYLON.Color3(1, 0.5, 0),  // Naranja
+            new BABYLON.Color3(0.5, 0, 0.5),// Púrpura
+            new BABYLON.Color3(0, 0.5, 0),  // Verde oscuro
+            new BABYLON.Color3(0.8, 0.4, 0) // Marrón
+        ];
+
+        // Direcciones de dispersión
+        const SCATTER_DIRECTIONS = [
+            new BABYLON.Vector3(1, 0, 0),   // Derecha
+            new BABYLON.Vector3(-1, 0, 0),  // Izquierda
+            new BABYLON.Vector3(0, 1, 0),   // Arriba
+            new BABYLON.Vector3(0, -1, 0),  // Abajo
+            new BABYLON.Vector3(0, 0, 1),   // Adelante
+            new BABYLON.Vector3(0, 0, -1)   // Atrás
+        ];
+
+        // Inicializar el juego
+        function initGame() {
+            gameState.canvas = document.getElementById('renderCanvas');
+            gameState.engine = new BABYLON.Engine(gameState.canvas, true, {
+                preserveDrawingBuffer: true,
+                stencil: true
+            });
+            gameState.scene = new BABYLON.Scene(gameState.engine);
+            
+            setupCamera();
+            setupLights();
+            setupScene();
+            
+            startLevel(gameState.currentLevel);
+            
+            setupControls();
+            setupUI();
+            setupClickSelection(); // Configurar selección por clic
+            
+            gameState.engine.runRenderLoop(() => {
+                gameState.scene.render();
+            });
+            
+            window.addEventListener('resize', () => {
+                gameState.engine.resize();
+            });
+        }
+
+        function setupClickSelection() {
+            gameState.scene.onPointerDown = function(evt, pickResult) {
+                if (gameState.isAnimating || !pickResult.hit || !pickResult.pickedMesh) return;
+                
+                const currentTime = Date.now();
+                const isDoubleClick = (currentTime - gameState.lastClickTime) < 300; // 300ms para doble clic
+                gameState.lastClickTime = currentTime;
+                
+                // Buscar la pieza que contiene el bloque clickeado
+                for (let i = 0; i < gameState.pieces.length; i++) {
+                    const piece = gameState.pieces[i];
+                    if (piece.blocks.includes(pickResult.pickedMesh)) {
+                        selectPiece(i);
+                        
+                        if (isDoubleClick && gameState.isScattered) {
+                            startFineAdjusting(piece, pickResult);
+                        }
+                        break;
+                    }
+                }
+            };
+            
+            gameState.scene.onPointerMove = function() {
+                if (gameState.isFineAdjusting) {
+                    updateFineAdjusting();
+                }
+            };
+            
+            gameState.scene.onPointerUp = function() {
+                if (gameState.isFineAdjusting) {
+                    stopFineAdjusting();
+                }
+            };
+        }
+
+        function startFineAdjusting(piece, pickResult) {
+            gameState.isFineAdjusting = true;
+            gameState.adjustStartPosition = new BABYLON.Vector2(
+                gameState.scene.pointerX,
+                gameState.scene.pointerY
+            );
+            gameState.adjustStartPiecePosition = piece.position.clone();
+            
+            // Cambiar color para indicar modo de ajuste fino
+            piece.blocks.forEach(block => {
+                block.material.emissiveColor = new BABYLON.Color3(0.8, 0.5, 0.2); // Color naranja
+            });
+        }
+
+        function updateFineAdjusting() {
+            const piece = gameState.pieces[gameState.selectedPieceIndex];
+            const currentPointer = new BABYLON.Vector2(
+                gameState.scene.pointerX,
+                gameState.scene.pointerY
+            );
+            
+            // Calcular diferencia de movimiento
+            const delta = currentPointer.subtract(gameState.adjustStartPosition);
+            
+            // Aplicar movimiento con factor de ajuste fino
+            const newPosition = gameState.adjustStartPiecePosition.clone();
+            newPosition.x += delta.x * gameState.fineAdjustFactor * 0.01;
+            newPosition.y -= delta.y * gameState.fineAdjustFactor * 0.01; // Invertir eje Y
+            
+            // Limitar movimiento dentro del cubo
+            const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
+            newPosition.x = Math.max(-halfSize, Math.min(halfSize, newPosition.x));
+            newPosition.y = Math.max(-halfSize, Math.min(halfSize, newPosition.y));
+            newPosition.z = gameState.adjustStartPiecePosition.z; // Mantener Z constante
+            
+            if (!checkCollision(piece, newPosition)) {
+                piece.position = newPosition;
+                piece.root.position = newPosition;
+            }
+        }
+
+        function stopFineAdjusting() {
+            gameState.isFineAdjusting = false;
+            gameState.adjustStartPosition = null;
+            gameState.adjustStartPiecePosition = null;
+            
+            // Restaurar color de selección
+            const piece = gameState.pieces[gameState.selectedPieceIndex];
+            if (piece) {
+                piece.blocks.forEach(block => {
+                    block.material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                });
+            }
+        }
+
+        function setupCamera() {
+            gameState.camera = new BABYLON.ArcRotateCamera(
+                "Camera", 
+                -Math.PI / 2, 
+                Math.PI / 3, 
+                30,  // Aumenté un poco la distancia para ver ambas cuadrículas
+                BABYLON.Vector3.Zero(), 
+                gameState.scene
+            );
+            gameState.camera.upperBetaLimit = Math.PI / 2;
+            gameState.camera.lowerRadiusLimit = 5;
+            gameState.camera.upperRadiusLimit = 50; // Aumenté el límite superior
+            gameState.camera.attachControl(gameState.canvas, true);
+            gameState.camera.inputs.attached.keyboard.detachControl();
+        }
+
+        function setupLights() {
+            new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), gameState.scene);
+            const directionalLight = new BABYLON.DirectionalLight(
+                "light2", 
+                new BABYLON.Vector3(0, -1, 1), 
+                gameState.scene
+            );
+            directionalLight.intensity = 0.7;
+        }
+
+        function setupScene() {
+            gameState.scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.2, 1);
+            gameState.scene.autoClear = true;
+            gameState.scene.autoClearDepthAndStencil = true;
+        }
+
+        function setupUI() {
+            document.getElementById('scatterBtn').addEventListener('click', scatterPieces);
+            document.getElementById('checkBtn').addEventListener('click', checkPuzzleComplete);
+            document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+            document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
+        }
+
+        function startLevel(level) {
+            // Limpiar escena correctamente
+            while (gameState.scene.meshes.length > 0) {
+                gameState.scene.meshes[0].dispose();
+            }
+            
+            gameState.pieces = [];
+            gameState.selectedPieceIndex = 0;
+            gameState.isScattered = false;
+            gameState.isFineAdjusting = false;
+            
+            gameState.targetCubeSize = 4 + Math.floor((level - 1) / 2);
+            if (gameState.targetCubeSize > 6) gameState.targetCubeSize = 6;
+            
+            document.getElementById('levelDisplay').textContent = gameState.currentLevel;
+            document.getElementById('levelComplete').style.display = 'none';
+            document.getElementById('solveBtn').disabled = false;
+            
+            createTargetCube();
+            createPiecesForLevel(level);
+            assemblePieces();
+            selectPiece(0);
+            
+            // Crear cuadrícula de referencia
+            createReferenceGrid();
+        }
+
+        function createTargetCube() {
+            const targetCube = BABYLON.MeshBuilder.CreateBox(
+                "targetCube", 
+                {size: gameState.targetCubeSize * gameState.gridSize}, 
+                gameState.scene
+            );
+            targetCube.visibility = 0;
+            
+            const wireframe = BABYLON.MeshBuilder.CreateBox(
+                "wireframe", 
+                {size: gameState.targetCubeSize * gameState.gridSize}, 
+                gameState.scene
+            );
+            const wireMat = new BABYLON.StandardMaterial("wireMat", gameState.scene);
+            wireMat.wireframe = true;
+            wireMat.emissiveColor = new BABYLON.Color3(0, 1, 0);
+            wireMat.alpha = 0.3;
+            wireframe.material = wireMat;
+            
+            createGrid();
+        }
+
+        function createGrid() {
+            const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
+            const lines = [];
+            
+            // Optimización: crear solo las líneas necesarias
+            for (let x = -halfSize; x <= halfSize; x += gameState.gridSize) {
+                lines.push([new BABYLON.Vector3(x, -halfSize, -halfSize), new BABYLON.Vector3(x, -halfSize, halfSize)]);
+                lines.push([new BABYLON.Vector3(x, halfSize, -halfSize), new BABYLON.Vector3(x, halfSize, halfSize)]);
+            }
+            
+            for (let z = -halfSize; z <= halfSize; z += gameState.gridSize) {
+                lines.push([new BABYLON.Vector3(-halfSize, -halfSize, z), new BABYLON.Vector3(halfSize, -halfSize, z)]);
+                lines.push([new BABYLON.Vector3(-halfSize, halfSize, z), new BABYLON.Vector3(halfSize, halfSize, z)]);
+            }
+            
+            const grid = BABYLON.MeshBuilder.CreateLineSystem("grid", {lines: lines}, gameState.scene);
+            grid.color = new BABYLON.Color3(0.5, 0.5, 0.5);
+            grid.alpha = 0.5;
+        }
+
+        function createReferenceGrid() {
+            const halfSize = (gameState.referenceGridSize * gameState.gridSize) / 2;
+            const offset = gameState.targetCubeSize * gameState.gridSize * 1.5 + halfSize;
+            const lines = [];
+            
+            // Crear líneas horizontales (eje X)
+            for (let x = -halfSize; x <= halfSize; x += gameState.gridSize) {
+                lines.push([new BABYLON.Vector3(x, -halfSize, -offset), new BABYLON.Vector3(x, -halfSize, -offset + gameState.referenceGridSize * gameState.gridSize)]);
+                lines.push([new BABYLON.Vector3(x, halfSize, -offset), new BABYLON.Vector3(x, halfSize, -offset + gameState.referenceGridSize * gameState.gridSize)]);
+            }
+            
+            // Crear líneas verticales (eje Z)
+            for (let z = -offset; z <= -offset + gameState.referenceGridSize * gameState.gridSize; z += gameState.gridSize) {
+                lines.push([new BABYLON.Vector3(-halfSize, -halfSize, z), new BABYLON.Vector3(halfSize, -halfSize, z)]);
+                lines.push([new BABYLON.Vector3(-halfSize, halfSize, z), new BABYLON.Vector3(halfSize, halfSize, z)]);
+            }
+            
+            const referenceGrid = BABYLON.MeshBuilder.CreateLineSystem("referenceGrid", {lines: lines}, gameState.scene);
+            referenceGrid.color = new BABYLON.Color3(0.3, 0.3, 0.3);
+            referenceGrid.alpha = 0.3;
+            
+            // Crear ejes de referencia
+            const axisLines = [
+                [new BABYLON.Vector3(-halfSize, 0, -offset + halfSize), new BABYLON.Vector3(halfSize, 0, -offset + halfSize)], // Eje X (rojo)
+                [new BABYLON.Vector3(0, -halfSize, -offset + halfSize), new BABYLON.Vector3(0, halfSize, -offset + halfSize)], // Eje Y (verde)
+                [new BABYLON.Vector3(0, 0, -offset), new BABYLON.Vector3(0, 0, -offset + gameState.referenceGridSize * gameState.gridSize)]  // Eje Z (azul)
+            ];
+            
+            const axes = BABYLON.MeshBuilder.CreateLineSystem("axes", {lines: axisLines}, gameState.scene);
+            axes.color = new BABYLON.Color3(1, 0, 0); // Color rojo para los ejes
+            axes.alpha = 0.5;
+        }
+
+        function createPiecesForLevel(level) {
+            const numPieces = 4 + Math.floor(level / 2);
+            if (numPieces > 10) numPieces = 10;
+            
+            const allBlocks = [];
+            const halfSize = Math.floor(gameState.targetCubeSize / 2) - 0.5;
+            
+            // Generar todas las posiciones posibles
+            for (let x = -halfSize; x <= halfSize; x++) {
+                for (let y = -halfSize; y <= halfSize; y++) {
+                    for (let z = -halfSize; z <= halfSize; z++) {
+                        allBlocks.push(new BABYLON.Vector3(x, y, z));
+                    }
+                }
+            }
+            
+            // Dividir en piezas asegurando adyacencia
+            const blocksPerPiece = Math.floor(allBlocks.length / numPieces);
+            
+            for (let i = 0; i < numPieces; i++) {
+                const pieceBlocks = [];
+                const blocksToTake = (i === numPieces - 1) ? allBlocks.length : blocksPerPiece;
+                
+                if (allBlocks.length > 0) {
+                    const startIndex = Math.floor(Math.random() * allBlocks.length);
+                    pieceBlocks.push(allBlocks[startIndex]);
+                    allBlocks.splice(startIndex, 1);
+                    
+                    // Asegurar bloques adyacentes
+                    for (let j = 1; j < blocksToTake && allBlocks.length > 0; j++) {
+                        let addedBlock = false;
+                        
+                        // Buscar adyacentes primero
+                        for (let k = 0; k < allBlocks.length && !addedBlock; k++) {
+                            const testBlock = allBlocks[k];
+                            
+                            for (let l = 0; l < pieceBlocks.length; l++) {
+                                if (areBlocksAdjacent(testBlock, pieceBlocks[l])) {
+                                    pieceBlocks.push(testBlock);
+                                    allBlocks.splice(k, 1);
+                                    addedBlock = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Si no hay adyacentes, agregar cualquier bloque
+                        if (!addedBlock && allBlocks.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * allBlocks.length);
+                            pieceBlocks.push(allBlocks[randomIndex]);
+                            allBlocks.splice(randomIndex, 1);
+                        }
+                    }
+                }
+                
+                createPiece(pieceBlocks, i);
+            }
+        }
+
+        function areBlocksAdjacent(block1, block2) {
+            const dx = Math.abs(block1.x - block2.x);
+            const dy = Math.abs(block1.y - block2.y);
+            const dz = Math.abs(block1.z - block2.z);
+            
+            return (dx === 1 && dy === 0 && dz === 0) ||
+                   (dx === 0 && dy === 1 && dz === 0) ||
+                   (dx === 0 && dy === 0 && dz === 1);
+        }
+
+        function createPiece(blockPositions, pieceIndex) {
+            const piece = {
+                blocks: [],
+                root: new BABYLON.TransformNode(`pieceRoot${pieceIndex}`, gameState.scene),
+                position: new BABYLON.Vector3(0, 0, 0),
+                rotation: 0,
+                originalPositions: [],
+                assembledPosition: new BABYLON.Vector3(0, 0, 0),
+                assembledRotation: 0
+            };
+            
+            // Calcular centro de masa
+            const center = new BABYLON.Vector3(0, 0, 0);
+            blockPositions.forEach(pos => center.addInPlace(pos));
+            center.scaleInPlace(1.0 / blockPositions.length);
+            
+            // Crear bloques
+            blockPositions.forEach((pos, index) => {
+                const block = BABYLON.MeshBuilder.CreateBox(
+                    `block${pieceIndex}_${index}`, 
+                    {size: 0.9 * gameState.gridSize}, 
+                    gameState.scene
+                );
+                block.parent = piece.root;
+                
+                const relativePos = pos.subtract(center);
+                block.position = relativePos.clone();
+                piece.originalPositions.push(relativePos.clone());
+                
+                const material = new BABYLON.StandardMaterial(`blockMat${pieceIndex}_${index}`, gameState.scene);
+                material.diffuseColor = COLORS[pieceIndex % COLORS.length];
+                material.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                material.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                block.material = material;
+                
+                // Habilitar picking para el bloque
+                block.isPickable = true;
+                
+                piece.blocks.push(block);
+            });
+            
+            // Guardar posición ensamblada
+            piece.assembledPosition = new BABYLON.Vector3(
+                center.x * gameState.gridSize,
+                center.y * gameState.gridSize,
+                center.z * gameState.gridSize
+            );
+            
+            gameState.pieces.push(piece);
+            return piece;
+        }
+
+        function assemblePieces() {
+            gameState.pieces.forEach(piece => {
+                piece.position = piece.assembledPosition.clone();
+                piece.root.position = piece.assembledPosition.clone();
+                piece.rotation = piece.assembledRotation;
+                piece.root.rotation.y = piece.assembledRotation;
+                updateBlockPositions(piece);
+            });
+            gameState.isScattered = false;
+        }
+
+        function scatterPieces() {
+            if (gameState.isScattered || gameState.isAnimating) return;
+            
+            const minDistance = gameState.targetCubeSize * gameState.gridSize * 1.5;
+            const maxDistance = gameState.targetCubeSize * gameState.gridSize * 2.5;
+            
+            // Usar todas las direcciones posibles
+            const directions = [...SCATTER_DIRECTIONS];
+            
+            // Asignar dirección única a cada pieza
+            const usedDirections = new Set();
+            
+            gameState.pieces.forEach((piece, index) => {
+                let direction;
+                let attempts = 0;
+                const maxAttempts = 20;
+                
+                // Buscar dirección no usada
+                do {
+                    const dirIndex = Math.floor(Math.random() * directions.length);
+                    direction = directions[dirIndex];
+                    attempts++;
+                    
+                    if (attempts >= maxAttempts) {
+                        usedDirections.clear();
+                        break;
+                    }
+                } while (usedDirections.has(direction.toString()) && attempts < maxAttempts);
+                
+                usedDirections.add(direction.toString());
+                
+                // Calcular distancia como múltiplo exacto
+                const distanceMultiplier = Math.floor(minDistance/gameState.gridSize) + 
+                                         Math.floor(Math.random() * ((maxDistance-minDistance)/gameState.gridSize));
+                const distance = distanceMultiplier * gameState.gridSize;
+                
+                const newPosition = new BABYLON.Vector3(
+                    direction.x * distance,
+                    direction.y * distance,
+                    direction.z * distance
+                );
+                
+                piece.position = newPosition;
+                piece.root.position = piece.position.clone();
+                
+                // Rotación aleatoria (90° incrementos)
+                piece.rotation = Math.floor(Math.random() * 4) * Math.PI / 2;
+                piece.root.rotation.y = piece.rotation;
+                
+                updateBlockPositions(piece);
+            });
+            
+            gameState.isScattered = true;
+        }
+
+        function updateBlockPositions(piece) {
+            piece.blocks.forEach((block, index) => {
+                const originalPos = piece.originalPositions[index];
+                const rotatedPos = new BABYLON.Vector3(
+                    originalPos.z * Math.sin(piece.rotation) + originalPos.x * Math.cos(piece.rotation),
+                    originalPos.y,
+                    originalPos.z * Math.cos(piece.rotation) - originalPos.x * Math.sin(piece.rotation)
+                );
+                block.position = rotatedPos;
+            });
+        }
+
+        function selectPiece(index) {
+            if (gameState.isAnimating || index < 0 || index >= gameState.pieces.length) return;
+            
+            // Deseleccionar actual
+            if (gameState.pieces[gameState.selectedPieceIndex]) {
+                gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
+                    block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                });
+            }
+            
+            // Seleccionar nueva
+            gameState.selectedPieceIndex = index;
+            gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
+                block.material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+            });
+        }
+
+        function moveSelectedPiece(direction) {
+            if (gameState.isAnimating || !gameState.isScattered || gameState.isFineAdjusting) return;
+            
+            const piece = gameState.pieces[gameState.selectedPieceIndex];
+            const newPosition = piece.position.clone();
+            const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
+            
+            switch (direction) {
+                case 'up': 
+                    newPosition.y += gameState.gridSize;
+                    if (newPosition.y > halfSize) return;
+                    break;
+                case 'down': 
+                    newPosition.y -= gameState.gridSize;
+                    if (newPosition.y < -halfSize) return;
+                    break;
+                case 'left': 
+                    newPosition.x -= gameState.gridSize;
+                    if (newPosition.x < -halfSize) return;
+                    break;
+                case 'right': 
+                    newPosition.x += gameState.gridSize;
+                    if (newPosition.x > halfSize) return;
+                    break;
+                case 'forward': 
+                    newPosition.z += gameState.gridSize;
+                    if (newPosition.z > halfSize) return;
+                    break;
+                case 'backward': 
+                    newPosition.z -= gameState.gridSize;
+                    if (newPosition.z < -halfSize) return;
+                    break;
+            }
+            
+            if (checkCollision(piece, newPosition)) {
+                showError("¡Movimiento no permitido! Hay colisión.");
+                return;
+            }
+            
+            piece.position = newPosition;
+            animatePieceToPosition(piece);
+        }
+
+        function checkCollision(piece, newPosition) {
+            const pieceBlocksPositions = new Set();
+            
+            // Calcular nuevas posiciones globales
+            piece.blocks.forEach(block => {
+                const globalPos = new BABYLON.Vector3(
+                    newPosition.x + block.position.x,
+                    newPosition.y + block.position.y,
+                    newPosition.z + block.position.z
+                );
+                const posKey = `${Math.round(globalPos.x * 10)}_${Math.round(globalPos.y * 10)}_${Math.round(globalPos.z * 10)}`;
+                pieceBlocksPositions.add(posKey);
+            });
+            
+            // Verificar contra otras piezas
+            for (let i = 0; i < gameState.pieces.length; i++) {
+                if (i === gameState.selectedPieceIndex) continue;
+                
+                const otherPiece = gameState.pieces[i];
+                for (let j = 0; j < otherPiece.blocks.length; j++) {
+                    const otherBlock = otherPiece.blocks[j];
+                    const otherGlobalPos = otherBlock.getAbsolutePosition();
+                    const otherPosKey = `${Math.round(otherGlobalPos.x * 10)}_${Math.round(otherGlobalPos.y * 10)}_${Math.round(otherGlobalPos.z * 10)}`;
+                    
+                    if (pieceBlocksPositions.has(otherPosKey)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        function rotateSelectedPiece() {
+            if (gameState.isAnimating || !gameState.isScattered || gameState.isFineAdjusting) return;
+            
+            const piece = gameState.pieces[gameState.selectedPieceIndex];
+            const oldRotation = piece.rotation;
+            
+            piece.rotation += Math.PI / 2;
+            if (piece.rotation >= Math.PI * 2) piece.rotation = 0;
+            
+            updateBlockPositions(piece);
+            
+            if (checkCollision(piece, piece.position)) {
+                piece.rotation = oldRotation;
+                updateBlockPositions(piece);
+                showError("¡Rotación no permitida! Hay colisión.");
+                return;
+            }
+            
+            animateRotation(piece, oldRotation);
+        }
+
+        function animatePieceToPosition(piece, duration = 200, onComplete = null) {
+            if (gameState.animationFrame) {
+                cancelAnimationFrame(gameState.animationFrame);
+            }
+            
+            const startTime = Date.now();
+            const startPosition = piece.root.position.clone();
+            const endPosition = piece.position.clone();
+            
+            const animate = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                piece.root.position = BABYLON.Vector3.Lerp(
+                    startPosition,
+                    endPosition,
+                    progress
+                );
+                
+                if (progress < 1) {
+                    gameState.animationFrame = requestAnimationFrame(animate);
+                } else {
+                    gameState.animationFrame = null;
+                    if (onComplete) onComplete();
+                }
+            };
+            
+            animate();
+        }
+
+        function animateRotation(piece, startRotation, duration = 200, onComplete = null) {
+            if (gameState.animationFrame) {
+                cancelAnimationFrame(gameState.animationFrame);
+            }
+            
+            const startTime = Date.now();
+            
+            const animate = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                piece.root.rotation.y = startRotation + (piece.rotation - startRotation) * progress;
+                
+                if (progress < 1) {
+                    gameState.animationFrame = requestAnimationFrame(animate);
+                } else {
+                    gameState.animationFrame = null;
+                    if (onComplete) onComplete();
+                }
+            };
+            
+            animate();
+        }
+
+        function solvePuzzle() {
+            if (gameState.isAnimating || !gameState.isScattered || gameState.isFineAdjusting) {
+                showError("No se puede resolver ahora");
+                return;
+            }
+            
+            // Deshabilitar controles durante la resolución
+            gameState.isAnimating = true;
+            document.getElementById('solveBtn').disabled = true;
+            
+            // Resolver pieza por pieza con un delay entre ellas
+            let currentPieceIndex = 0;
+            const solveNextPiece = () => {
+                if (currentPieceIndex >= gameState.pieces.length) {
+                    // Resolución completada
+                    gameState.isAnimating = false;
+                    document.getElementById('solveBtn').disabled = false;
+                    checkPuzzleComplete(); // Mostrar mensaje de completado
+                    return;
+                }
+                
+                const piece = gameState.pieces[currentPieceIndex];
+                selectPiece(currentPieceIndex);
+                
+                // Animación de movimiento
+                const moveDuration = 1000; // 1 segundo por movimiento
+                const rotateDuration = 800; // 0.8 segundos por rotación
+                
+                // Paso 1: Rotar si es necesario
+                const rotationSteps = Math.round((piece.assembledRotation - piece.rotation) / (Math.PI/2));
+                let rotationCount = 0;
+                
+                const rotateStep = () => {
+                    if (rotationCount < Math.abs(rotationSteps)) {
+                        piece.rotation += (Math.PI/2) * Math.sign(rotationSteps);
+                        if (piece.rotation >= Math.PI * 2) piece.rotation = 0;
+                        if (piece.rotation < 0) piece.rotation += Math.PI * 2;
+                        
+                        updateBlockPositions(piece);
+                        animateRotation(piece, piece.rotation - (Math.PI/2) * Math.sign(rotationSteps), rotateDuration, () => {
+                            rotationCount++;
+                            setTimeout(rotateStep, 200); // Pequeña pausa entre rotaciones
+                        });
+                    } else {
+                        // Paso 2: Mover a posición correcta
+                        const startPosition = piece.position.clone();
+                        const endPosition = piece.assembledPosition.clone();
+                        
+                        piece.position = endPosition;
+                        animatePieceToPosition(piece, moveDuration, () => {
+                            // Esperar un poco antes de pasar a la siguiente pieza
+                            setTimeout(() => {
+                                currentPieceIndex++;
+                                solveNextPiece();
+                            }, 500);
+                        });
+                    }
+                };
+                
+                if (rotationSteps !== 0) {
+                    rotateStep();
+                } else {
+                    // Mover directamente si no necesita rotación
+                    const startPosition = piece.position.clone();
+                    const endPosition = piece.assembledPosition.clone();
+                    
+                    piece.position = endPosition;
+                    animatePieceToPosition(piece, moveDuration, () => {
+                        setTimeout(() => {
+                            currentPieceIndex++;
+                            solveNextPiece();
+                        }, 500);
+                    });
+                }
+            };
+            
+            solveNextPiece();
+        }
+
+        function checkPuzzleComplete() {
+            if (!gameState.isScattered) return;
+            
+            let allCorrect = true;
+            const tolerance = 0.01;
+            
+            for (const piece of gameState.pieces) {
+                if (!piece.position.equalsWithEpsilon(piece.assembledPosition, tolerance) ||
+                    Math.abs(piece.rotation - piece.assembledRotation) > tolerance) {
+                    allCorrect = false;
+                    break;
+                }
+            }
+            
+            if (allCorrect) {
+                document.getElementById('levelComplete').style.display = 'block';
+            } else {
+                showError("El cubo no está correctamente ensamblado");
+            }
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+            
+            setTimeout(() => {
+                errorMsg.style.display = 'none';
+            }, 2000);
+        }
+
+        function nextLevel() {
+            gameState.currentLevel++;
+            startLevel(gameState.currentLevel);
+        }
+
+        function setupControls() {
+            const keyMap = {
+                't': 'up',
+                'g': 'down',
+                'e': 'right',
+                'd': 'left',
+                'q': 'forward',
+                'w': 'backward',
+                'r': 'rotate',
+                ' ': 'change'
+            };
+            
+            document.addEventListener('keydown', (e) => {
+                const action = keyMap[e.key.toLowerCase()];
+                if (!action) return;
+                
+                e.preventDefault();
+                
+                switch (action) {
+                    case 'up':
+                    case 'down':
+                    case 'left':
+                    case 'right':
+                    case 'forward':
+                    case 'backward':
+                        moveSelectedPiece(action);
+                        break;
+                    case 'rotate':
+                        rotateSelectedPiece();
+                        break;
+                    case 'change':
+                        selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length);
+                        break;
+                }
+            });
+        }
+
+        // Iniciar el juego cuando el DOM esté listo
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
 </html>

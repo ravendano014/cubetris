@@ -165,34 +165,34 @@
             <p>Ajuste Fino: <span id="fineTuneStatus">DESACTIVADO</span></p>
             <p>Instrucciones:</p>
             <ul>
-                <li>E/D: Mover pieza en X</li>
-                <li>T/G: Mover pieza en Y</li>
-                <li>Q/W: Mover pieza en Z</li>
+                <li>A/D: Mover pieza en X</li>
+                <li>W/S: Mover pieza en Y</li>
+                <li>Q/E: Mover pieza en Z</li>
                 <li>R: Rotar pieza</li>
                 <li>Espacio: Cambiar pieza</li>
                 <li>Clic: Seleccionar pieza</li>
                 <li>Doble clic o tecla M: Activar/Desactivar Ajuste fino (desplazamiento muy preciso)</li>
-                <li>Tecla D: Dispersar piezas</li>
-                <li>Tecla V: Verificar cubo</li>
+                <li>P: Dispersar piezas</li>
+                <li>V: Verificar cubo</li>
             </ul>
         </div>
         
         <div id="controls">
             <div class="control-row">
-                <button class="control-btn scatter-btn" id="btnScatter">D (Dispersar)</button>
+                <button class="control-btn scatter-btn" id="btnScatter">P (Dispersar)</button>
                 <button class="control-btn check-btn" id="btnCheck">V (Verificar)</button>
                 <button class="control-btn reset-btn" id="btnReset">Reiniciar</button>
             </div>
             <button class="control-btn ok-btn" id="btnItsOk">Its Ok for Me</button>
             <div class="control-row">
-                <button class="control-btn" id="btnE">E (Der. X)</button>
-                <button class="control-btn" id="btnT">T (Arr. Y)</button>
+                <button class="control-btn" id="btnA">A (Der. X)</button>
+                <button class="control-btn" id="btnW">W (Arr. Y)</button>
                 <button class="control-btn" id="btnQ">Q (Avan. Z)</button>
             </div>
             <div class="control-row">
                 <button class="control-btn" id="btnD">D (Izq. X)</button>
-                <button class="control-btn" id="btnG">G (Aba. Y)</button>
-                <button class="control-btn" id="btnW">W (Atrás Z)</button>
+                <button class="control-btn" id="btnS">S (Aba. Y)</button>
+                <button class="control-btn" id="btnE">E (Atrás Z)</button>
             </div>
             <div class="control-row">
                 <button class="control-btn" id="btnR">R (Rotar)</button>
@@ -334,12 +334,12 @@
             document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
 
             // Button controls
-            document.getElementById('btnE').addEventListener('click', () => moveSelectedPiece('right'));
-            document.getElementById('btnT').addEventListener('click', () => moveSelectedPiece('up'));
+            document.getElementById('btnA').addEventListener('click', () => moveSelectedPiece('right'));
+            document.getElementById('btnW').addEventListener('click', () => moveSelectedPiece('up'));
             document.getElementById('btnQ').addEventListener('click', () => moveSelectedPiece('forward'));
             document.getElementById('btnD').addEventListener('click', () => moveSelectedPiece('left'));
-            document.getElementById('btnG').addEventListener('click', () => moveSelectedPiece('down'));
-            document.getElementById('btnW').addEventListener('click', () => moveSelectedPiece('backward'));
+            document.getElementById('btnS').addEventListener('click', () => moveSelectedPiece('down'));
+            document.getElementById('btnE').addEventListener('click', () => moveSelectedPiece('backward'));
             document.getElementById('btnR').addEventListener('click', rotateSelectedPiece);
             document.getElementById('btnSpace').addEventListener('click', () => selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length));
             document.getElementById('btnM').addEventListener('click', toggleFineTuneMode);
@@ -1008,16 +1008,17 @@
 
                     // Convertir coordenadas de escena a coordenadas de cuadrícula indexadas en 0
                     // Redondear a la unidad de cuadrícula más cercana.
-                    const gridX = Math.round(actualBlockGlobalX / gameState.gridSize + (targetSize / 2) - 0.5);
-                    const gridY = Math.round(actualBlockGlobalY / gameState.gridSize + (targetSize / 2) - 0.5);
-                    const gridZ = Math.round(actualBlockGlobalZ / gameState.gridSize + (targetSize / 2) - 0.5);
+                    const precisionFactor = gameState.gridSize / 4;
+                    const gridX = Math.round(actualBlockGlobalX / precisionFactor) * precisionFactor;
+                    const gridY = Math.round(actualBlockGlobalY / precisionFactor) * precisionFactor;
+                    const gridZ = Math.round(actualBlockGlobalZ / precisionFactor) * precisionFactor;
                     
                     const posKey = `${gridX}_${gridY}_${gridZ}`;
 
                     // Verificar si la posición de la cuadrícula es válida (dentro de los límites 0 a targetSize-1)
-                    if (gridX < 0 || gridX >= targetSize ||
-                        gridY < 0 || gridY >= targetSize ||
-                        gridZ < 0 || gridZ >= targetSize) {
+                    if (gridX < -halfSize || gridX >= halfSize ||
+                        gridY < -halfSize || gridY >= halfSize ||
+                        gridZ < -halfSize || gridZ >= halfSize) {
                         // Este caso también indica que está fuera de límites, aunque sea un error de lógica interna
                         outOfBoundsPieces.add(piece);
                         foundError = true;
@@ -1157,18 +1158,20 @@
 
         function setupControls() {
             const keyMap = {
-                't': 'up',
-                'g': 'down',
-                'e': 'right',
-                'd': 'left', // This 'd' is for moving left
-                'q': 'forward',
-                'w': 'backward',
+                'p': 'scatter',      // Dispersar activarlo con la letra P
+                'w': 'up',           // W por T (meaning 'w' now moves 'up')
+                's': 'down',         // S por G (meaning 's' now moves 'down')
+                'a': 'right',        // A por E (meaning 'a' now moves 'right')
+                'e': 'backward',     // E por W (meaning 'e' now moves 'backward')
+
+                // Retained/unaffected assignments
+                'd': 'left',         // 'D' (left) is unaffected by the changes, 'p' takes over scatter
+                'q': 'forward',      // 'Q' (forward) is unaffected by the changes
                 'r': 'rotate',
                 ' ': 'change',
                 'm': 'toggleFineTune',
-                'd': 'scatter', // New 'd' for scatter
-                'v': 'check',    // New 'v' for check
-                'k': 'okForMe' // New keybind for "Its Ok for Me" button
+                'v': 'check',
+                'k': 'okForMe'
             };
             
             document.addEventListener('keydown', (e) => {

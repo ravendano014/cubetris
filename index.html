@@ -71,12 +71,26 @@
         .control-btn:hover {
             background-color: #0b7dda;
         }
+        .align-btn {
+            background-color: #FF9800;
+            margin: 4px 2px;
+            width: calc(33% - 8px);
+            display: inline-block;
+            padding: 8px 0;
+        }
+        .align-btn:hover {
+            background-color: #F57C00;
+        }
         .solve-btn {
             background-color: #9C27B0;
             margin-top: 10px;
         }
         .solve-btn:hover {
             background-color: #7B1FA2;
+        }
+        #alignControls {
+            margin-top: 10px;
+            text-align: center;
         }
         h2 {
             margin-top: 0;
@@ -107,14 +121,15 @@
         <p>Nivel: <span id="levelDisplay">1</span></p>
         <p>Instrucciones:</p>
         <ul>
-            <li>Click: Seleccionar pieza</li>
-            <li>Doble click + arrastre: Ajuste fino de posición</li>
             <li>E/D: Mover pieza en X</li>
             <li>T/G: Mover pieza en Y</li>
             <li>Q/W: Mover pieza en Z</li>
             <li>R: Rotar pieza</li>
             <li>Espacio: Cambiar pieza</li>
+            <li>Clic: Seleccionar pieza</li>
+            <li>Doble clic o tecla M: Activar/Desactivar Ajuste fino (desplazamiento muy preciso)</li>
         </ul>
+        
         
         <div id="controls">
             <button id="scatterBtn" class="control-btn">Dispersar Piezas</button>
@@ -144,12 +159,9 @@
             gridSize: 1.0,
             isScattered: false,
             animationFrame: null,
-            referenceGridSize: 20, // Tamaño de la cuadrícula de referencia
-            isFineAdjusting: false,
-            adjustStartPosition: null,
-            adjustStartPiecePosition: null,
-            lastClickTime: 0,
-            fineAdjustFactor: 0.1 // Factor de ajuste fino (10% del movimiento normal)
+            isFineTuneMode: false, // Nuevo: modo de ajuste fino
+            lastClickTime: 0, // Nuevo: para detectar doble clic
+            doubleClickThreshold: 300 // ms
         };
 
         // Constantes
@@ -176,6 +188,10 @@
             new BABYLON.Vector3(0, 0, -1)   // Atrás
         ];
 
+        // Colores de emisión para selección
+        const NORMAL_EMISSIVE_COLOR = new BABYLON.Color3(0.3, 0.3, 0.3);
+        const FINE_TUNE_EMISSIVE_COLOR = new BABYLON.Color3(0.5, 0.5, 0); // Amarillo/Naranja para ajuste fino
+
         // Inicializar el juego
         function initGame() {
             gameState.canvas = document.getElementById('renderCanvas');
@@ -193,7 +209,7 @@
             
             setupControls();
             setupUI();
-            setupClickSelection(); // Configurar selección por clic
+            setupPointerControls(); 
             
             gameState.engine.runRenderLoop(() => {
                 gameState.scene.render();
@@ -204,108 +220,18 @@
             });
         }
 
-        function setupClickSelection() {
-            gameState.scene.onPointerDown = function(evt, pickResult) {
-                if (gameState.isAnimating || !pickResult.hit || !pickResult.pickedMesh) return;
-                
-                const currentTime = Date.now();
-                const isDoubleClick = (currentTime - gameState.lastClickTime) < 300; // 300ms para doble clic
-                gameState.lastClickTime = currentTime;
-                
-                // Buscar la pieza que contiene el bloque clickeado
-                for (let i = 0; i < gameState.pieces.length; i++) {
-                    const piece = gameState.pieces[i];
-                    if (piece.blocks.includes(pickResult.pickedMesh)) {
-                        selectPiece(i);
-                        
-                        if (isDoubleClick && gameState.isScattered) {
-                            startFineAdjusting(piece, pickResult);
-                        }
-                        break;
-                    }
-                }
-            };
-            
-            gameState.scene.onPointerMove = function() {
-                if (gameState.isFineAdjusting) {
-                    updateFineAdjusting();
-                }
-            };
-            
-            gameState.scene.onPointerUp = function() {
-                if (gameState.isFineAdjusting) {
-                    stopFineAdjusting();
-                }
-            };
-        }
-
-        function startFineAdjusting(piece, pickResult) {
-            gameState.isFineAdjusting = true;
-            gameState.adjustStartPosition = new BABYLON.Vector2(
-                gameState.scene.pointerX,
-                gameState.scene.pointerY
-            );
-            gameState.adjustStartPiecePosition = piece.position.clone();
-            
-            // Cambiar color para indicar modo de ajuste fino
-            piece.blocks.forEach(block => {
-                block.material.emissiveColor = new BABYLON.Color3(0.8, 0.5, 0.2); // Color naranja
-            });
-        }
-
-        function updateFineAdjusting() {
-            const piece = gameState.pieces[gameState.selectedPieceIndex];
-            const currentPointer = new BABYLON.Vector2(
-                gameState.scene.pointerX,
-                gameState.scene.pointerY
-            );
-            
-            // Calcular diferencia de movimiento
-            const delta = currentPointer.subtract(gameState.adjustStartPosition);
-            
-            // Aplicar movimiento con factor de ajuste fino
-            const newPosition = gameState.adjustStartPiecePosition.clone();
-            newPosition.x += delta.x * gameState.fineAdjustFactor * 0.01;
-            newPosition.y -= delta.y * gameState.fineAdjustFactor * 0.01; // Invertir eje Y
-            
-            // Limitar movimiento dentro del cubo
-            const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
-            newPosition.x = Math.max(-halfSize, Math.min(halfSize, newPosition.x));
-            newPosition.y = Math.max(-halfSize, Math.min(halfSize, newPosition.y));
-            newPosition.z = gameState.adjustStartPiecePosition.z; // Mantener Z constante
-            
-            if (!checkCollision(piece, newPosition)) {
-                piece.position = newPosition;
-                piece.root.position = newPosition;
-            }
-        }
-
-        function stopFineAdjusting() {
-            gameState.isFineAdjusting = false;
-            gameState.adjustStartPosition = null;
-            gameState.adjustStartPiecePosition = null;
-            
-            // Restaurar color de selección
-            const piece = gameState.pieces[gameState.selectedPieceIndex];
-            if (piece) {
-                piece.blocks.forEach(block => {
-                    block.material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-                });
-            }
-        }
-
         function setupCamera() {
             gameState.camera = new BABYLON.ArcRotateCamera(
                 "Camera", 
                 -Math.PI / 2, 
                 Math.PI / 3, 
-                30,  // Aumenté un poco la distancia para ver ambas cuadrículas
+                20, 
                 BABYLON.Vector3.Zero(), 
                 gameState.scene
             );
             gameState.camera.upperBetaLimit = Math.PI / 2;
             gameState.camera.lowerRadiusLimit = 5;
-            gameState.camera.upperRadiusLimit = 50; // Aumenté el límite superior
+            gameState.camera.upperRadiusLimit = 25;
             gameState.camera.attachControl(gameState.canvas, true);
             gameState.camera.inputs.attached.keyboard.detachControl();
         }
@@ -342,7 +268,7 @@
             gameState.pieces = [];
             gameState.selectedPieceIndex = 0;
             gameState.isScattered = false;
-            gameState.isFineAdjusting = false;
+            gameState.isFineTuneMode = false; // Reset fine tune mode on level start
             
             gameState.targetCubeSize = 4 + Math.floor((level - 1) / 2);
             if (gameState.targetCubeSize > 6) gameState.targetCubeSize = 6;
@@ -354,10 +280,7 @@
             createTargetCube();
             createPiecesForLevel(level);
             assemblePieces();
-            selectPiece(0);
-            
-            // Crear cuadrícula de referencia
-            createReferenceGrid();
+            selectPiece(0); // Select the first piece by default
         }
 
         function createTargetCube() {
@@ -386,7 +309,7 @@
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             const lines = [];
             
-            // Optimización: crear solo las líneas necesarias
+            // Grid principal
             for (let x = -halfSize; x <= halfSize; x += gameState.gridSize) {
                 lines.push([new BABYLON.Vector3(x, -halfSize, -halfSize), new BABYLON.Vector3(x, -halfSize, halfSize)]);
                 lines.push([new BABYLON.Vector3(x, halfSize, -halfSize), new BABYLON.Vector3(x, halfSize, halfSize)]);
@@ -400,39 +323,24 @@
             const grid = BABYLON.MeshBuilder.CreateLineSystem("grid", {lines: lines}, gameState.scene);
             grid.color = new BABYLON.Color3(0.5, 0.5, 0.5);
             grid.alpha = 0.5;
-        }
 
-        function createReferenceGrid() {
-            const halfSize = (gameState.referenceGridSize * gameState.gridSize) / 2;
-            const offset = gameState.targetCubeSize * gameState.gridSize * 1.5 + halfSize;
-            const lines = [];
-            
-            // Crear líneas horizontales (eje X)
-            for (let x = -halfSize; x <= halfSize; x += gameState.gridSize) {
-                lines.push([new BABYLON.Vector3(x, -halfSize, -offset), new BABYLON.Vector3(x, -halfSize, -offset + gameState.referenceGridSize * gameState.gridSize)]);
-                lines.push([new BABYLON.Vector3(x, halfSize, -offset), new BABYLON.Vector3(x, halfSize, -offset + gameState.referenceGridSize * gameState.gridSize)]);
+            // Segunda cuadrícula de referencia (20x20)
+            const secondGridSize = 20;
+            const secondHalfSize = (secondGridSize * gameState.gridSize) / 2;
+            const secondGridLines = [];
+            const offsetY = -(gameState.targetCubeSize * gameState.gridSize) / 2 - gameState.gridSize; // Posición debajo de la cuadrícula principal
+
+            for (let x = -secondHalfSize; x <= secondHalfSize; x += gameState.gridSize) {
+                secondGridLines.push([new BABYLON.Vector3(x, offsetY, -secondHalfSize), new BABYLON.Vector3(x, offsetY, secondHalfSize)]);
             }
             
-            // Crear líneas verticales (eje Z)
-            for (let z = -offset; z <= -offset + gameState.referenceGridSize * gameState.gridSize; z += gameState.gridSize) {
-                lines.push([new BABYLON.Vector3(-halfSize, -halfSize, z), new BABYLON.Vector3(halfSize, -halfSize, z)]);
-                lines.push([new BABYLON.Vector3(-halfSize, halfSize, z), new BABYLON.Vector3(halfSize, halfSize, z)]);
+            for (let z = -secondHalfSize; z <= secondHalfSize; z += gameState.gridSize) {
+                secondGridLines.push([new BABYLON.Vector3(-secondHalfSize, offsetY, z), new BABYLON.Vector3(secondHalfSize, offsetY, z)]);
             }
-            
-            const referenceGrid = BABYLON.MeshBuilder.CreateLineSystem("referenceGrid", {lines: lines}, gameState.scene);
-            referenceGrid.color = new BABYLON.Color3(0.3, 0.3, 0.3);
-            referenceGrid.alpha = 0.3;
-            
-            // Crear ejes de referencia
-            const axisLines = [
-                [new BABYLON.Vector3(-halfSize, 0, -offset + halfSize), new BABYLON.Vector3(halfSize, 0, -offset + halfSize)], // Eje X (rojo)
-                [new BABYLON.Vector3(0, -halfSize, -offset + halfSize), new BABYLON.Vector3(0, halfSize, -offset + halfSize)], // Eje Y (verde)
-                [new BABYLON.Vector3(0, 0, -offset), new BABYLON.Vector3(0, 0, -offset + gameState.referenceGridSize * gameState.gridSize)]  // Eje Z (azul)
-            ];
-            
-            const axes = BABYLON.MeshBuilder.CreateLineSystem("axes", {lines: axisLines}, gameState.scene);
-            axes.color = new BABYLON.Color3(1, 0, 0); // Color rojo para los ejes
-            axes.alpha = 0.5;
+
+            const secondGrid = BABYLON.MeshBuilder.CreateLineSystem("secondGrid", {lines: secondGridLines}, gameState.scene);
+            secondGrid.color = new BABYLON.Color3(0.8, 0.2, 0.2); // Color rojo para la segunda cuadrícula
+            secondGrid.alpha = 0.2; // Más transparente
         }
 
         function createPiecesForLevel(level) {
@@ -512,7 +420,8 @@
                 rotation: 0,
                 originalPositions: [],
                 assembledPosition: new BABYLON.Vector3(0, 0, 0),
-                assembledRotation: 0
+                assembledRotation: 0,
+                index: pieceIndex 
             };
             
             // Calcular centro de masa
@@ -536,11 +445,11 @@
                 const material = new BABYLON.StandardMaterial(`blockMat${pieceIndex}_${index}`, gameState.scene);
                 material.diffuseColor = COLORS[pieceIndex % COLORS.length];
                 material.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-                material.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                material.emissiveColor = new BABYLON.Color3(0, 0, 0); // Inicialmente sin emisión
                 block.material = material;
                 
-                // Habilitar picking para el bloque
-                block.isPickable = true;
+                block.isPickable = true; 
+                block.pieceIndex = pieceIndex; 
                 
                 piece.blocks.push(block);
             });
@@ -634,53 +543,79 @@
             });
         }
 
-        function selectPiece(index) {
+        function selectPiece(index, isDoubleClick = false) {
             if (gameState.isAnimating || index < 0 || index >= gameState.pieces.length) return;
             
-            // Deseleccionar actual
+            // Deseleccionar actual y resetear emissive color
             if (gameState.pieces[gameState.selectedPieceIndex]) {
                 gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
                     block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
                 });
             }
             
-            // Seleccionar nueva
+            // Si la pieza seleccionada es la misma y fue un doble clic, toggle fine tune
+            if (index === gameState.selectedPieceIndex && isDoubleClick) {
+                gameState.isFineTuneMode = !gameState.isFineTuneMode;
+            } else {
+                // Si es una nueva selección o un clic simple, desactiva fine tune
+                gameState.isFineTuneMode = false;
+            }
+
+            // Seleccionar nueva pieza
             gameState.selectedPieceIndex = index;
+            const emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
             gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
-                block.material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                block.material.emissiveColor = emissiveColor;
             });
         }
 
+        function toggleFineTuneMode() {
+            if (gameState.pieces.length === 0) return; // No pieces to select
+
+            gameState.isFineTuneMode = !gameState.isFineTuneMode;
+            const selectedPiece = gameState.pieces[gameState.selectedPieceIndex];
+            if (selectedPiece) {
+                const emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
+                selectedPiece.blocks.forEach(block => {
+                    block.material.emissiveColor = emissiveColor;
+                });
+            }
+        }
+
+
         function moveSelectedPiece(direction) {
-            if (gameState.isAnimating || !gameState.isScattered || gameState.isFineAdjusting) return;
+            if (gameState.isAnimating || !gameState.isScattered) return;
             
             const piece = gameState.pieces[gameState.selectedPieceIndex];
             const newPosition = piece.position.clone();
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             
+            // Determinar la cantidad de desplazamiento
+            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 4 : gameState.gridSize; // Cambiado a /4
+
             switch (direction) {
                 case 'up': 
-                    newPosition.y += gameState.gridSize;
+                    newPosition.y += displacement;
                     if (newPosition.y > halfSize) return;
                     break;
                 case 'down': 
-                    newPosition.y -= gameState.gridSize;
+                    newPosition.y -= displacement;
                     if (newPosition.y < -halfSize) return;
                     break;
                 case 'left': 
-                    newPosition.x -= gameState.gridSize;
+                    newPosition.x -= displacement;
                     if (newPosition.x < -halfSize) return;
                     break;
                 case 'right': 
-                    newPosition.x += gameState.gridSize;
+                    newPosition.x += displacement;
                     if (newPosition.x > halfSize) return;
                     break;
                 case 'forward': 
-                    newPosition.z += gameState.gridSize;
+                    newPosition.z += displacement;
                     if (newPosition.z > halfSize) return;
                     break;
                 case 'backward': 
-                    newPosition.z -= gameState.gridSize;
+                    newPosition.z -= displacement;
                     if (newPosition.z < -halfSize) return;
                     break;
             }
@@ -704,7 +639,9 @@
                     newPosition.y + block.position.y,
                     newPosition.z + block.position.z
                 );
-                const posKey = `${Math.round(globalPos.x * 10)}_${Math.round(globalPos.y * 10)}_${Math.round(globalPos.z * 10)}`;
+                // Redondear a la precisión de la cuadrícula para las comparaciones de colisión (ahora a la de 1/4 de la unidad)
+                const precisionFactor = gameState.gridSize / 4; 
+                const posKey = `${Math.round(globalPos.x / precisionFactor) * precisionFactor}_${Math.round(globalPos.y / precisionFactor) * precisionFactor}_${Math.round(globalPos.z / precisionFactor) * precisionFactor}`;
                 pieceBlocksPositions.add(posKey);
             });
             
@@ -716,7 +653,9 @@
                 for (let j = 0; j < otherPiece.blocks.length; j++) {
                     const otherBlock = otherPiece.blocks[j];
                     const otherGlobalPos = otherBlock.getAbsolutePosition();
-                    const otherPosKey = `${Math.round(otherGlobalPos.x * 10)}_${Math.round(otherGlobalPos.y * 10)}_${Math.round(otherGlobalPos.z * 10)}`;
+                    // Redondear a la precisión de la cuadrícula para las comparaciones de colisión (ahora a la de 1/4 de la unidad)
+                    const precisionFactor = gameState.gridSize / 4;
+                    const otherPosKey = `${Math.round(otherGlobalPos.x / precisionFactor) * precisionFactor}_${Math.round(otherGlobalPos.y / precisionFactor) * precisionFactor}_${Math.round(otherGlobalPos.z / precisionFactor) * precisionFactor}`;
                     
                     if (pieceBlocksPositions.has(otherPosKey)) {
                         return true;
@@ -727,8 +666,9 @@
             return false;
         }
 
+
         function rotateSelectedPiece() {
-            if (gameState.isAnimating || !gameState.isScattered || gameState.isFineAdjusting) return;
+            if (gameState.isAnimating || !gameState.isScattered) return;
             
             const piece = gameState.pieces[gameState.selectedPieceIndex];
             const oldRotation = piece.rotation;
@@ -803,7 +743,7 @@
         }
 
         function solvePuzzle() {
-            if (gameState.isAnimating || !gameState.isScattered || gameState.isFineAdjusting) {
+            if (gameState.isAnimating || !gameState.isScattered) {
                 showError("No se puede resolver ahora");
                 return;
             }
@@ -824,7 +764,7 @@
                 }
                 
                 const piece = gameState.pieces[currentPieceIndex];
-                selectPiece(currentPieceIndex);
+                selectPiece(currentPieceIndex); // Select the piece for animation
                 
                 // Animación de movimiento
                 const moveDuration = 1000; // 1 segundo por movimiento
@@ -885,7 +825,8 @@
             if (!gameState.isScattered) return;
             
             let allCorrect = true;
-            const tolerance = 0.01;
+            // Aumentar la tolerancia para permitir la alineación fina
+            const tolerance = 0.05; // Ajustado para ser un poco más indulgente con el ajuste fino
             
             for (const piece of gameState.pieces) {
                 if (!piece.position.equalsWithEpsilon(piece.assembledPosition, tolerance) ||
@@ -926,7 +867,8 @@
                 'q': 'forward',
                 'w': 'backward',
                 'r': 'rotate',
-                ' ': 'change'
+                ' ': 'change',
+                'm': 'toggleFineTune' // Añadida la tecla 'm' para el ajuste fino
             };
             
             document.addEventListener('keydown', (e) => {
@@ -948,9 +890,55 @@
                         rotateSelectedPiece();
                         break;
                     case 'change':
+                        // Only change piece with spacebar, not affecting fine-tune mode immediately
                         selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length);
                         break;
+                    case 'toggleFineTune':
+                        toggleFineTuneMode();
+                        break;
                 }
+            });
+        }
+
+        function setupPointerControls() {
+            gameState.canvas.addEventListener("pointerdown", function (evt) {
+                if (evt.button !== 0) return; 
+
+                const pickResult = gameState.scene.pick(evt.clientX, evt.clientY);
+                const currentTime = Date.now();
+                const deltaTime = currentTime - gameState.lastClickTime;
+
+                if (pickResult.hit && pickResult.pickedMesh && pickResult.pickedMesh.pieceIndex !== undefined) {
+                    const clickedPieceIndex = pickResult.pickedMesh.pieceIndex;
+
+                    if (deltaTime < gameState.doubleClickThreshold && clickedPieceIndex === gameState.selectedPieceIndex) {
+                        // Es un doble clic en la pieza ya seleccionada, toggle fine tune
+                        selectPiece(clickedPieceIndex, true); 
+                    } else if (clickedPieceIndex !== gameState.selectedPieceIndex) {
+                        // Clic en una nueva pieza, desactiva fine tune y selecciona la nueva
+                        selectPiece(clickedPieceIndex, false); 
+                    } else {
+                        // Clic simple en la pieza ya seleccionada, no hace nada a menos que quieras deseleccionar
+                        // o tener un comportamiento diferente. Por ahora, si ya está seleccionada y no es doble clic, no cambia la selección
+                        // pero sí podría desactivar el modo de ajuste fino si estaba activo y no se hizo doble clic
+                        if (gameState.isFineTuneMode) {
+                            selectPiece(clickedPieceIndex, false); // Desactiva fine tune
+                        }
+                    }
+                } else {
+                    // Clic en el fondo o en un mesh no pickable, deselecciona y desactiva fine tune
+                    if (gameState.pieces[gameState.selectedPieceIndex]) {
+                        gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
+                            block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        });
+                    }
+                    gameState.isFineTuneMode = false;
+                    // No hay pieza seleccionada, o puedes optar por mantener la última seleccionada pero sin resaltado.
+                    // Para este juego, la deselección no está definida, así que mantendremos el último índice seleccionado
+                    // pero visualmente no resaltado.
+                }
+
+                gameState.lastClickTime = currentTime;
             });
         }
 

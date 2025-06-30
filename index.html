@@ -361,8 +361,14 @@
             gameState.isScattered = false;
             gameState.isFineTuneMode = false; // Reset fine tune mode on level start
             
-            gameState.targetCubeSize = 4 + Math.floor((level - 1) / 2);
-            if (gameState.targetCubeSize > 6) gameState.targetCubeSize = 6;
+            // Lógica para definir targetCubeSize basada en el nivel
+            if (level <= 2) {
+                gameState.targetCubeSize = 2; // Level 1 and 2: 2x2 grid
+            } else if (level <= 6) { // Levels 3, 4, 5, 6: 4x4 grid
+                gameState.targetCubeSize = 4;
+            } else { // Level 7 onwards: 6x6 grid
+                gameState.targetCubeSize = 6;
+            }
             
             document.getElementById('levelDisplay').textContent = gameState.currentLevel;
             document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVADO' : 'DESACTIVADO'; // Update fine tune status

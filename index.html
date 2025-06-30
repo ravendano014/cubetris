@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Cubetris - Versión Completa con Solucionador</title>
+    <title>Cubetris - Full Version with Solver</title>
     <style>
         html, body {
             overflow: hidden;
@@ -159,59 +159,59 @@
 <body>
     <canvas id="renderCanvas"></canvas>
     <div id="ui">
-        <h2>CubeTris</h2>
+        <h2>Cubetris</h2>
         <div style="font-size: 0.85em;">
-            <p>Nivel: <span id="levelDisplay">1</span></p>
-            <p>Ajuste Fino: <span id="fineTuneStatus">DESACTIVADO</span></p>
-            <p>Instrucciones:</p>
+            <p>Level: <span id="levelDisplay">1</span></p>
+            <p>Fine Tune: <span id="fineTuneStatus">DEACTIVATED</span></p>
+            <p>Instructions:</p>
             <ul>
-                <li>A/D: Mover pieza en X</li>
-                <li>W/S: Mover pieza en Y</li>
-                <li>Q/E: Mover pieza en Z</li>
-                <li>R: Rotar pieza</li>
-                <li>Espacio: Cambiar pieza</li>
-                <li>Clic: Seleccionar pieza</li>
-                <li>Doble clic o tecla M: Activar/Desactivar Ajuste fino (desplazamiento muy preciso)</li>
-                <li>P: Dispersar piezas</li>
-                <li>V: Verificar cubo</li>
+                <li>A/D: Move piece in X</li>
+                <li>W/S: Move piece in Y</li>
+                <li>Q/E: Move piece in Z</li>
+                <li>R: Rotate piece</li>
+                <li>Space: Change piece</li>
+                <li>Click: Select piece</li>
+                <li>Double click or M key: Toggle Fine Tune (very precise movement)</li>
+                <li>P: Scatter pieces</li>
+                <li>V: Check cube</li>
             </ul>
         </div>
         
         <div id="controls">
             <div class="control-row">
-                <button class="control-btn scatter-btn" id="btnScatter">P (Dispersar)</button>
-                <button class="control-btn check-btn" id="btnCheck">V (Verificar)</button>
-                <button class="control-btn reset-btn" id="btnReset">Reiniciar</button>
+                <button class="control-btn scatter-btn" id="btnScatter">P (Scatter)</button>
+                <button class="control-btn check-btn" id="btnCheck">V (Check)</button>
+                <button class="control-btn reset-btn" id="btnReset">Reset</button>
             </div>
             <button class="control-btn ok-btn" id="btnItsOk">Its Ok for Me</button>
             <div class="control-row">
-                <button class="control-btn" id="btnA">A (Der. X)</button>
-                <button class="control-btn" id="btnW">W (Arr. Y)</button>
-                <button class="control-btn" id="btnQ">Q (Avan. Z)</button>
+                <button class="control-btn" id="btnA">A (Right X)</button>
+                <button class="control-btn" id="btnW">W (Up Y)</button>
+                <button class="control-btn" id="btnQ">Q (Forward Z)</button>
             </div>
             <div class="control-row">
-                <button class="control-btn" id="btnD">D (Izq. X)</button>
-                <button class="control-btn" id="btnS">S (Aba. Y)</button>
-                <button class="control-btn" id="btnE">E (Atrás Z)</button>
+                <button class="control-btn" id="btnD">D (Left X)</button>
+                <button class="control-btn" id="btnS">S (Down Y)</button>
+                <button class="control-btn" id="btnE">E (Backward Z)</button>
             </div>
             <div class="control-row">
-                <button class="control-btn" id="btnR">R (Rotar)</button>
-                <button class="control-btn" id="btnSpace">Espacio (Cambiar Pieza)</button>
-                <button class="control-btn" id="btnM">M (Ajuste Fino)</button>
+                <button class="control-btn" id="btnR">R (Rotate)</button>
+                <button class="control-btn" id="btnSpace">Space (Change Piece)</button>
+                <button class="control-btn" id="btnM">M (Fine Tune)</button>
             </div>
-            <button id="solveBtn" class="control-btn solve-btn">Resolver Puzzle</button>
-            <button id="resetCameraBtn" class="control-btn">Reiniciar Cámara</button>
+            <button id="solveBtn" class="control-btn solve-btn">Solve Puzzle</button>
+            <button id="resetCameraBtn" class="control-btn">Reset Camera</button>
         </div>
     </div>
     <div id="levelComplete">
-        <h2>¡Nivel completado!</h2>
-        <p>Has ensamblado correctamente el cubo.</p>
-        <button id="nextLevelBtn">Siguiente nivel</button>
+        <h2>Level completed!</h2>
+        <p>You have correctly assembled the cube.</p>
+        <button id="nextLevelBtn">Next level</button>
     </div>
     <div id="errorMsg"></div>
 
     <script>
-        // Variables globales optimizadas
+        // Optimized global variables
         const gameState = {
             canvas: null,
             engine: null,
@@ -225,40 +225,40 @@
             gridSize: 1.0,
             isScattered: false,
             animationFrame: null,
-            isFineTuneMode: false, // Nuevo: modo de ajuste fino
-            lastClickTime: 0, // Nuevo: para detectar doble clic
+            isFineTuneMode: false, // New: fine tune mode
+            lastClickTime: 0, // New: for double click detection
             doubleClickThreshold: 300 // ms
         };
 
-        // Constantes
+        // Constants
         const COLORS = [
-            new BABYLON.Color3(1, 0, 0),    // Rojo
-            new BABYLON.Color3(0, 0, 1),    // Azul
-            new BABYLON.Color3(0, 1, 0),    // Verde
-            new BABYLON.Color3(1, 1, 0),    // Amarillo
+            new BABYLON.Color3(1, 0, 0),    // Red
+            new BABYLON.Color3(0, 0, 1),    // Blue
+            new BABYLON.Color3(0, 1, 0),    // Green
+            new BABYLON.Color3(1, 1, 0),    // Yellow
             new BABYLON.Color3(1, 0, 1),    // Magenta
-            new BABYLON.Color3(0, 1, 1),    // Cian
-            new BABYLON.Color3(1, 0.5, 0),  // Naranja
-            new BABYLON.Color3(0.5, 0, 0.5),// Púrpura
-            new BABYLON.Color3(0, 0.5, 0),  // Verde oscuro
-            new BABYLON.Color3(0.8, 0.4, 0) // Marrón
+            new BABYLON.Color3(0, 1, 1),    // Cyan
+            new BABYLON.Color3(1, 0.5, 0),  // Orange
+            new BABYLON.Color3(0.5, 0, 0.5),// Purple
+            new BABYLON.Color3(0, 0.5, 0),  // Dark Green
+            new BABYLON.Color3(0.8, 0.4, 0) // Brown
         ];
 
-        // Direcciones de dispersión
+        // Scatter directions
         const SCATTER_DIRECTIONS = [
-            new BABYLON.Vector3(1, 0, 0),   // Derecha
-            new BABYLON.Vector3(-1, 0, 0),  // Izquierda
-            new BABYLON.Vector3(0, 1, 0),   // Arriba
-            new BABYLON.Vector3(0, -1, 0),  // Abajo
-            new BABYLON.Vector3(0, 0, 1),   // Adelante
-            new BABYLON.Vector3(0, 0, -1)   // Atrás
+            new BABYLON.Vector3(1, 0, 0),   // Right
+            new BABYLON.Vector3(-1, 0, 0),  // Left
+            new BABYLON.Vector3(0, 1, 0),   // Up
+            new BABYLON.Vector3(0, -1, 0),  // Down
+            new BABYLON.Vector3(0, 0, 1),   // Forward
+            new BABYLON.Vector3(0, 0, -1)   // Backward
         ];
 
-        // Colores de emisión para selección
+        // Emissive colors for selection
         const NORMAL_EMISSIVE_COLOR = new BABYLON.Color3(0.3, 0.3, 0.3);
-        const FINE_TUNE_EMISSIVE_COLOR = new BABYLON.Color3(0.5, 0.5, 0); // Amarillo/Naranja para ajuste fino
+        const FINE_TUNE_EMISSIVE_COLOR = new BABYLON.Color3(0.5, 0.5, 0); // Yellow/Orange for fine tune
 
-        // Inicializar el juego
+        // Initialize the game
         function initGame() {
             gameState.canvas = document.getElementById('renderCanvas');
             gameState.engine = new BABYLON.Engine(gameState.canvas, true, {
@@ -351,7 +351,7 @@
         }
 
         function startLevel(level) {
-            // Limpiar escena correctamente
+            // Clear scene correctly
             while (gameState.scene.meshes.length > 0) {
                 gameState.scene.meshes[0].dispose();
             }
@@ -361,7 +361,7 @@
             gameState.isScattered = false;
             gameState.isFineTuneMode = false; // Reset fine tune mode on level start
             
-            // Lógica para definir targetCubeSize basada en el nivel
+            // Logic to define targetCubeSize based on level
             if (level <= 2) {
                 gameState.targetCubeSize = 2; // Level 1 and 2: 2x2 grid
             } else if (level <= 6) { // Levels 3, 4, 5, 6: 4x4 grid
@@ -371,7 +371,7 @@
             }
             
             document.getElementById('levelDisplay').textContent = gameState.currentLevel;
-            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVADO' : 'DESACTIVADO'; // Update fine tune status
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED'; // Update fine tune status
             document.getElementById('levelComplete').style.display = 'none';
             document.getElementById('solveBtn').disabled = false;
             
@@ -407,7 +407,7 @@
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             const lines = [];
             
-            // Grid principal
+            // Main grid
             for (let x = -halfSize; x <= halfSize; x += gameState.gridSize) {
                 lines.push([new BABYLON.Vector3(x, -halfSize, -halfSize), new BABYLON.Vector3(x, -halfSize, halfSize)]);
                 lines.push([new BABYLON.Vector3(x, halfSize, -halfSize), new BABYLON.Vector3(x, halfSize, halfSize)]);
@@ -422,10 +422,10 @@
             grid.color = new BABYLON.Color3(0.5, 0.5, 0.5);
             grid.alpha = 0.5;
 
-            // Segunda cuadrícula de referencia (20x20)
+            // Second reference grid (20x20)
             const secondGridSize = 20;
             const secondHalfSize = (secondGridSize * gameState.gridSize) / 2;
-            const offsetY = -(gameState.targetCubeSize * gameState.gridSize) / 2 - gameState.gridSize; // Posición debajo de la cuadrícula principal
+            const offsetY = -(gameState.targetCubeSize * gameState.gridSize) / 2 - gameState.gridSize; // Position below the main grid
 
             const secondGridLines = [];
             for (let x = -secondHalfSize; x <= secondHalfSize; x += gameState.gridSize) {
@@ -437,8 +437,8 @@
             }
 
             const secondGrid = BABYLON.MeshBuilder.CreateLineSystem("secondGrid", {lines: secondGridLines}, gameState.scene);
-            secondGrid.color = new BABYLON.Color3(0.8, 0.2, 0.2); // Color rojo para la segunda cuadrícula
-            secondGrid.alpha = 0.2; // Más transparente
+            secondGrid.color = new BABYLON.Color3(0.8, 0.2, 0.2); // Red color for the second grid
+            secondGrid.alpha = 0.2; // More transparent
         }
 
         function createPiecesForLevel(level) {
@@ -448,7 +448,7 @@
             const allBlocks = [];
             const halfSize = Math.floor(gameState.targetCubeSize / 2) - 0.5;
             
-            // Generar todas las posiciones posibles
+            // Generate all possible positions
             for (let x = -halfSize; x <= halfSize; x++) {
                 for (let y = -halfSize; y <= halfSize; y++) {
                     for (let z = -halfSize; z <= halfSize; z++) {
@@ -457,7 +457,7 @@
                 }
             }
             
-            // Dividir en piezas asegurando adyacencia
+            // Divide into pieces ensuring adjacency
             const blocksPerPiece = Math.floor(allBlocks.length / numPieces);
             
             for (let i = 0; i < numPieces; i++) {
@@ -469,11 +469,11 @@
                     pieceBlocks.push(allBlocks[startIndex]);
                     allBlocks.splice(startIndex, 1);
                     
-                    // Asegurar bloques adyacentes
+                    // Ensure adjacent blocks
                     for (let j = 1; j < blocksToTake && allBlocks.length > 0; j++) {
                         let addedBlock = false;
                         
-                        // Buscar adyacentes primero
+                        // Search for adjacent first
                         for (let k = 0; k < allBlocks.length && !addedBlock; k++) {
                             const testBlock = allBlocks[k];
                             
@@ -487,7 +487,7 @@
                             }
                         }
                         
-                        // Si no hay adyacentes, agregar cualquier bloque
+                        // If no adjacents, add any block
                         if (!addedBlock && allBlocks.length > 0) {
                             const randomIndex = Math.floor(Math.random() * allBlocks.length);
                             pieceBlocks.push(allBlocks[randomIndex]);
@@ -522,7 +522,7 @@
                 index: pieceIndex 
             };
             
-            // Calcular centro de masa
+            // Calculate center of mass
             const center = new BABYLON.Vector3(0, 0, 0);
             blockPositions.forEach(pos => center.addInPlace(pos));
             center.scaleInPlace(1.0 / blockPositions.length);
@@ -546,7 +546,7 @@
                 center.z * gameState.gridSize
             );
             
-            // Crear bloques
+            // Create blocks
             blockPositions.forEach((pos, index) => {
                 const block = BABYLON.MeshBuilder.CreateBox(
                     `block${pieceIndex}_${index}`, 
@@ -582,7 +582,7 @@
                 piece.blocks.push(block);
             });
             
-            // Guardar posición ensamblada
+            // Save assembled position
             piece.assembledPosition = pieceAssembledGlobalPosition;
             
             gameState.pieces.push(piece);
@@ -606,10 +606,10 @@
             const minDistance = gameState.targetCubeSize * gameState.gridSize * 1.5;
             const maxDistance = gameState.targetCubeSize * gameState.gridSize * 2.5;
             
-            // Usar todas las direcciones posibles
+            // Use all possible directions
             const directions = [...SCATTER_DIRECTIONS];
             
-            // Asignar dirección única a cada pieza
+            // Assign unique direction to each piece
             const usedDirections = new Set();
             
             gameState.pieces.forEach((piece, index) => {
@@ -617,7 +617,7 @@
                 let attempts = 0;
                 const maxAttempts = 20;
                 
-                // Buscar dirección no usada
+                // Search for unused direction
                 do {
                     const dirIndex = Math.floor(Math.random() * directions.length);
                     direction = directions[dirIndex];
@@ -631,7 +631,7 @@
                 
                 usedDirections.add(direction.toString());
                 
-                // Calcular distancia como múltiplo exacto
+                // Calculate distance as exact multiple
                 const distanceMultiplier = Math.floor(minDistance/gameState.gridSize) + 
                                          Math.floor(Math.random() * ((maxDistance-minDistance)/gameState.gridSize));
                 const distance = distanceMultiplier * gameState.gridSize;
@@ -645,7 +645,7 @@
                 piece.position = newPosition;
                 piece.root.position = piece.position.clone();
                 
-                // Rotación aleatoria (90° incrementos)
+                // Random rotation (90° increments)
                 piece.rotation = Math.floor(Math.random() * 4) * Math.PI / 2;
                 piece.root.rotation.y = piece.rotation;
                 
@@ -670,7 +670,7 @@
         function selectPiece(index, isDoubleClick = false) {
             if (gameState.isAnimating || index < 0 || index >= gameState.pieces.length) return;
             
-            // Deseleccionar actual
+            // Deselect current
             if (gameState.pieces[gameState.selectedPieceIndex]) {
                 gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
                     block.renderOutline = false; // Disable outline for previously selected
@@ -680,15 +680,15 @@
                 });
             }
             
-            // Si la pieza seleccionada es la misma y fue un doble clic, toggle fine tune
+            // If the selected piece is the same and it was a double click, toggle fine tune
             if (index === gameState.selectedPieceIndex && isDoubleClick) {
                 gameState.isFineTuneMode = !gameState.isFineTuneMode;
             } else {
-                // Si es una nueva selección o un clic simple, desactiva fine tune
+                // If it's a new selection or a single click, disable fine tune
                 gameState.isFineTuneMode = false;
             }
 
-            // Seleccionar nueva pieza
+            // Select new piece
             gameState.selectedPieceIndex = index;
             const selectedPiece = gameState.pieces[gameState.selectedPieceIndex];
             
@@ -704,7 +704,7 @@
             });
 
             // Update UI for fine-tune mode
-            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVADO' : 'DESACTIVADO';
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED';
         }
 
         function toggleFineTuneMode() {
@@ -723,7 +723,7 @@
                     block.outlineWidth = outlineWidth;
                 });
             }
-            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVADO' : 'DESACTIVADO'; // Update UI
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED'; // Update UI
         }
 
 
@@ -734,8 +734,8 @@
             const newPosition = piece.position.clone();
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             
-            // Determinar la cantidad de desplazamiento
-            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 16 : gameState.gridSize; // Cambiado a /16 para mayor precisión
+            // Determine displacement amount
+            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 16 : gameState.gridSize; // Changed to /16 for higher precision
 
             switch (direction) {
                 case 'up': 
@@ -765,7 +765,7 @@
             }
             
             if (checkCollision(piece, newPosition)) {
-                showError("¡Movimiento no permitido! Hay colisión.");
+                showError("Movement not allowed! There is a collision.");
                 return;
             }
             
@@ -776,20 +776,20 @@
         function checkCollision(piece, newPosition) {
             const pieceBlocksPositions = new Set();
             
-            // Calcular nuevas posiciones globales
+            // Calculate new global positions
             piece.blocks.forEach(block => {
                 const globalPos = new BABYLON.Vector3(
                     newPosition.x + block.position.x,
                     newPosition.y + block.position.y,
                     newPosition.z + block.position.z
                 );
-                // Redondear a la precisión de la cuadrícula para las comparaciones de colisión (ahora a la de 1/4 de la unidad)
+                // Round to grid precision for collision comparisons (now to 1/4 of unit)
                 const precisionFactor = gameState.gridSize / 4;
                 const posKey = `${Math.round(globalPos.x / precisionFactor) * precisionFactor}_${Math.round(globalPos.y / precisionFactor) * precisionFactor}_${Math.round(globalPos.z / precisionFactor) * precisionFactor}`;
                 pieceBlocksPositions.add(posKey);
             });
             
-            // Verificar contra otras piezas
+            // Check against other pieces
             for (let i = 0; i < gameState.pieces.length; i++) {
                 if (i === gameState.selectedPieceIndex) continue;
                 
@@ -797,7 +797,7 @@
                 for (let j = 0; j < otherPiece.blocks.length; j++) {
                     const otherBlock = otherPiece.blocks[j];
                     const otherGlobalPos = otherBlock.getAbsolutePosition();
-                    // Redondear a la precisión de la cuadrícula para las comparaciones de colisión (ahora a la de 1/4 de la unidad)
+                    // Round to grid precision for collision comparisons (now to 1/4 of unit)
                     const precisionFactor = gameState.gridSize / 4;
                     const otherPosKey = `${Math.round(otherGlobalPos.x / precisionFactor) * precisionFactor}_${Math.round(otherGlobalPos.y / precisionFactor) * precisionFactor}_${Math.round(otherGlobalPos.z / precisionFactor) * precisionFactor}`;
                     
@@ -825,7 +825,7 @@
             if (checkCollision(piece, piece.position)) {
                 piece.rotation = oldRotation;
                 updateBlockPositions(piece);
-                showError("¡Rotación no permitida! Hay colisión.");
+                showError("Rotation not allowed! There is a collision.");
                 return;
             }
             
@@ -888,33 +888,33 @@
 
         function solvePuzzle() {
             if (gameState.isAnimating || !gameState.isScattered) {
-                showError("No se puede resolver ahora");
+                showError("Cannot solve now");
                 return;
             }
             
-            // Deshabilitar controles durante la resolución
+            // Disable controls during solving
             gameState.isAnimating = true;
             document.getElementById('solveBtn').disabled = true;
             
-            // Resolver pieza por pieza con un delay entre ellas
+            // Solve piece by piece with a delay between them
             let currentPieceIndex = 0;
             const solveNextPiece = () => {
                 if (currentPieceIndex >= gameState.pieces.length) {
-                    // Resolución completada
+                    // Solution completed
                     gameState.isAnimating = false;
                     document.getElementById('solveBtn').disabled = false;
-                    checkPuzzleComplete(); // Mostrar mensaje de completado
+                    checkPuzzleComplete(); // Show completion message
                     return;
                 }
                 
                 const piece = gameState.pieces[currentPieceIndex];
                 selectPiece(currentPieceIndex); // Select the piece for animation
                 
-                // Animación de movimiento
-                const moveDuration = 1000; // 1 segundo por movimiento
-                const rotateDuration = 800; // 0.8 segundos por rotación
+                // Movement animation
+                const moveDuration = 1000; // 1 second per movement
+                const rotateDuration = 800; // 0.8 seconds per rotation
                 
-                // Paso 1: Rotar si es necesario
+                // Step 1: Rotate if necessary
                 const rotationSteps = Math.round((piece.assembledRotation - piece.rotation) / (Math.PI/2));
                 let rotationCount = 0;
                 
@@ -927,16 +927,16 @@
                         updateBlockPositions(piece);
                         animateRotation(piece, piece.rotation - (Math.PI/2) * Math.sign(rotationSteps), rotateDuration, () => {
                             rotationCount++;
-                            setTimeout(rotateStep, 200); // Pequeña pausa entre rotaciones
+                            setTimeout(rotateStep, 200); // Small pause between rotations
                         });
                     } else {
-                        // Paso 2: Mover a posición correcta
+                        // Step 2: Move to correct position
                         const startPosition = piece.position.clone();
                         const endPosition = piece.assembledPosition.clone();
                         
                         piece.position = endPosition;
                         animatePieceToPosition(piece, moveDuration, () => {
-                            // Esperar un poco antes de pasar a la siguiente pieza
+                            // Wait a bit before moving to the next piece
                             setTimeout(() => {
                                 currentPieceIndex++;
                                 solveNextPiece();
@@ -948,7 +948,7 @@
                 if (rotationSteps !== 0) {
                     rotateStep();
                 } else {
-                    // Mover directamente si no necesita rotación
+                    // Move directly if no rotation needed
                     const startPosition = piece.position.clone();
                     const endPosition = piece.assembledPosition.clone();
                     
@@ -966,33 +966,33 @@
         }
 
         function checkPuzzleComplete() {
-            if (!gameState.isScattered) return; // Solo verificar si las piezas están dispersas y siendo ensambladas
+            if (!gameState.isScattered) return; // Only check if pieces are scattered and being assembled
 
             const targetSize = gameState.targetCubeSize;
-            const halfSize = (targetSize * gameState.gridSize) / 2; // Tamaño real en unidades de escena
-            const boundaryTolerance = 0.25 * gameState.gridSize; // Tolerancia aumentada a 1/4 de una unidad de cuadrícula
+            const halfSize = (targetSize * gameState.gridSize) / 2; // Actual size in scene units
+            const boundaryTolerance = 0.25 * gameState.gridSize; // Tolerance increased to 1/4 of a grid unit
 
-            // Arrays para rastrear piezas con errores
+            // Arrays to track pieces with errors
             const outOfBoundsPieces = new Set();
             const overlappingPieces = new Set();
             
-            // Crear una cuadrícula 3D para rastrear las posiciones ocupadas dentro del cubo objetivo
-            const occupiedGrid = new Map(); // Clave: "x_y_z", Valor: BABYLON.Mesh | null (bloque si está ocupado, null si está vacío)
+            // Create a 3D grid to track occupied positions within the target cube
+            const occupiedGrid = new Map(); // Key: "x_y_z", Value: BABYLON.Mesh | null (block if occupied, null if empty)
 
-            // Inicializar la cuadrícula con valores nulos
+            // Initialize the grid with null values
             for (let i = 0; i < targetSize; i++) {
                 for (let j = 0; j < targetSize; j++) {
                     for (let k = 0; k < targetSize; k++) {
-                        occupiedGrid.set(`${i}_${j}_${k}`, null); // Inicializar como vacío
+                        occupiedGrid.set(`${i}_${j}_${k}`, null); // Initialize as empty
                     }
                 }
             }
             
             const expectedTotalBlocks = targetSize * targetSize * targetSize;
             let currentBlockCount = 0;
-            let foundError = false; // Flag para saber si se encontró algún tipo de error
+            let foundError = false; // Flag to know if any type of error was found
 
-            // Iterar a través de todas las piezas y sus bloques para poblar la cuadrícula ocupada
+            // Iterate through all pieces and their blocks to populate the occupied grid
             for (const piece of gameState.pieces) {
                 for (const block of piece.blocks) {
                     const rotatedBlockLocalPos = block.position; 
@@ -1001,19 +1001,19 @@
                     const actualBlockGlobalY = piece.position.y + rotatedBlockLocalPos.y;
                     const actualBlockGlobalZ = piece.position.z + rotatedBlockLocalPos.z;
 
-                    // Verificar si el bloque está dentro de los límites del cubo objetivo con tolerancia
-                    // El cubo objetivo va de -halfSize a +halfSize.
+                    // Check if the block is within the target cube boundaries with tolerance
+                    // The target cube goes from -halfSize to +halfSize.
                     if (actualBlockGlobalX < -halfSize - boundaryTolerance || actualBlockGlobalX > halfSize + boundaryTolerance ||
                         actualBlockGlobalY < -halfSize - boundaryTolerance || actualBlockGlobalY > halfSize + boundaryTolerance ||
                         actualBlockGlobalZ < -halfSize - boundaryTolerance || actualBlockGlobalZ > halfSize + boundaryTolerance) {
                         
                         outOfBoundsPieces.add(piece);
                         foundError = true;
-                        continue; // No retornar, seguir verificando otros bloques
+                        continue; // Do not return, continue checking other blocks
                     }
 
-                    // Convertir coordenadas de escena a coordenadas de cuadrícula indexadas en 0
-                    // Redondear a la unidad de cuadrícula más cercana.
+                    // Convert scene coordinates to 0-indexed grid coordinates
+                    // Round to the nearest grid unit.
                     const precisionFactor = gameState.gridSize / 4;
                     const gridX = Math.round(actualBlockGlobalX / precisionFactor) * precisionFactor;
                     const gridY = Math.round(actualBlockGlobalY / precisionFactor) * precisionFactor;
@@ -1021,62 +1021,62 @@
                     
                     const posKey = `${gridX}_${gridY}_${gridZ}`;
 
-                    // Verificar si la posición de la cuadrícula es válida (dentro de los límites 0 a targetSize-1)
+                    // Check if the grid position is valid (within 0 to targetSize-1 limits)
                     if (gridX < -halfSize || gridX >= halfSize ||
                         gridY < -halfSize || gridY >= halfSize ||
                         gridZ < -halfSize || gridZ >= halfSize) {
-                        // Este caso también indica que está fuera de límites, aunque sea un error de lógica interna
+                        // This case also indicates out of bounds, even if it's an internal logic error
                         outOfBoundsPieces.add(piece);
                         foundError = true;
-                        continue; // No retornar, seguir verificando otros bloques
+                        continue; // Do not return, continue checking other blocks
                     }
 
-                    if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) { // La posición ya está ocupada, significa una superposición
+                    if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) { // Position is already occupied, means an overlap
                         const existingBlock = occupiedGrid.get(posKey);
                         const existingPiece = gameState.pieces[existingBlock.pieceIndex];
                         
                         overlappingPieces.add(piece);
                         overlappingPieces.add(existingPiece);
                         foundError = true;
-                        continue; // No retornar, seguir verificando otros bloques
+                        continue; // Do not return, continue checking other blocks
                     } else {
-                        occupiedGrid.set(posKey, block); // Marcar como ocupado por este bloque
+                        occupiedGrid.set(posKey, block); // Mark as occupied by this block
                         currentBlockCount++;
                     }
                 }
             }
 
-            // Después de verificar todas las piezas y bloques, reportar los errores
+            // After checking all pieces and blocks, report errors
             if (outOfBoundsPieces.size > 0) {
-                showError("¡Una o más piezas están fuera del cubo cuadrícula!");
-                outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0))); // Rojo para fuera de límites
+                showError("One or more pieces are outside the grid cube!");
+                outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0))); // Red for out of bounds
             } else if (overlappingPieces.size > 0) {
-                showError("¡Hay bloques superpuestos!");
-                overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0.5, 0))); // Naranja para superposición
+                showError("There are overlapping blocks!");
+                overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0.5, 0))); // Orange for overlap
             } else if (currentBlockCount !== expectedTotalBlocks) {
-                showError("El cubo no está correctamente ensamblado. Faltan bloques o están fuera de lugar.");
+                showError("The cube is not correctly assembled. Blocks are missing or misplaced.");
             } else {
-                // Si no se encontraron errores y el conteo de bloques es correcto
+                // If no errors found and block count is correct
                 document.getElementById('levelComplete').style.display = 'block';
             }
         }
 
         function checkProximityAndOverlap() {
             if (!gameState.isScattered) {
-                showError("¡Las piezas no están dispersas! Usa el botón 'Dispersar' primero.");
+                showError("Pieces are not scattered! Use the 'Scatter' button first.");
                 return;
             }
 
             const targetSize = gameState.targetCubeSize;
             const halfSize = (targetSize * gameState.gridSize) / 2;
-            const proximityThreshold = gameState.gridSize; // "Menor de un cubo de largo"
+            const proximityThreshold = gameState.gridSize; // "Less than one cube length"
 
             let hasOverlap = false;
             let isTooFar = false;
 
-            const occupiedGrid = new Map(); // Para detectar solapamientos
+            const occupiedGrid = new Map(); // To detect overlaps
 
-            // Iterar a través de todas las piezas y sus bloques
+            // Iterate through all pieces and their blocks
             for (const piece of gameState.pieces) {
                 for (const block of piece.blocks) {
                     const rotatedBlockLocalPos = block.position; 
@@ -1090,7 +1090,7 @@
                         actualBlockGlobalY < -halfSize - proximityThreshold || actualBlockGlobalY > halfSize + proximityThreshold ||
                         actualBlockGlobalZ < -halfSize - proximityThreshold || actualBlockGlobalZ > halfSize + proximityThreshold) {
                         isTooFar = true;
-                        highlightPiece(piece, new BABYLON.Color3(1, 0.5, 0)); // Naranja para "demasiado lejos"
+                        highlightPiece(piece, new BABYLON.Color3(1, 0.5, 0)); // Orange for "too far"
                         // Continue to check for other errors on this block/piece
                     }
 
@@ -1104,7 +1104,7 @@
 
                     if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) {
                         hasOverlap = true;
-                        highlightPiece(piece, new BABYLON.Color3(1, 0, 0)); // Rojo para "superpuesto"
+                        highlightPiece(piece, new BABYLON.Color3(1, 0, 0)); // Red for "overlapping"
                         const existingPiece = gameState.pieces[occupiedGrid.get(posKey).pieceIndex];
                         highlightPiece(existingPiece, new BABYLON.Color3(1, 0, 0));
                     } else {
@@ -1114,22 +1114,22 @@
             }
 
             if (hasOverlap) {
-                showError("¡Hay bloques superpuestos!");
+                showError("There are overlapping blocks!");
             } else if (isTooFar) {
-                showError("¡Una o más piezas están demasiado lejos del cubo!");
+                showError("One or more pieces are too far from the cube!");
             } else {
                 nextLevel(); // Advance to the next level if all checks pass
             }
         }
 
 
-        // Función auxiliar para resaltar una pieza
+        // Helper function to highlight a piece
         function highlightPiece(pieceToHighlight, color, duration = 500) {
             const originalEmissiveColors = pieceToHighlight.blocks.map(b => b.material.emissiveColor.clone());
             pieceToHighlight.blocks.forEach(b => b.material.emissiveColor = color);
             setTimeout(() => {
                 pieceToHighlight.blocks.forEach((b, i) => {
-                    // Restaurar el color emisivo original, considerando si es la pieza actualmente seleccionada
+                    // Restore original emissive color, considering if it's the currently selected piece
                     if (pieceToHighlight.index === gameState.selectedPieceIndex) {
                         b.material.emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
                     } else {
@@ -1164,11 +1164,11 @@
 
         function setupControls() {
             const keyMap = {
-                'p': 'scatter',      // Dispersar activarlo con la letra P
-                'w': 'up',           // W por T (meaning 'w' now moves 'up')
-                's': 'down',         // S por G (meaning 's' now moves 'down')
-                'a': 'right',        // A por E (meaning 'a' now moves 'right')
-                'e': 'backward',     // E por W (meaning 'e' now moves 'backward')
+                'p': 'scatter',      // Scatter activate with P key
+                'w': 'up',           // W for Up
+                's': 'down',         // S for Down
+                'a': 'right',        // A for Right
+                'e': 'backward',     // E for Backward
 
                 // Retained/unaffected assignments
                 'd': 'left',         // 'D' (left) is unaffected by the changes, 'p' takes over scatter
@@ -1228,21 +1228,21 @@
                     const clickedPieceIndex = pickResult.pickedMesh.pieceIndex;
 
                     if (deltaTime < gameState.doubleClickThreshold && clickedPieceIndex === gameState.selectedPieceIndex) {
-                        // Es un doble clic en la pieza ya seleccionada, toggle fine tune
+                        // It's a double click on the already selected piece, toggle fine tune
                         selectPiece(clickedPieceIndex, true); 
                     } else if (clickedPieceIndex !== gameState.selectedPieceIndex) {
-                        // Clic en una nueva pieza, desactiva fine tune y selecciona la nueva
+                        // Click on a new piece, disable fine tune and select the new one
                         selectPiece(clickedPieceIndex, false); 
                     } else {
-                        // Clic simple en la pieza ya seleccionada, no hace nada a menos que quieras deseleccionar
-                        // o tener un comportamiento diferente. Por ahora, si ya está seleccionada y no es doble clic, no cambia la selección
-                        // pero sí podría desactivar el modo de ajuste fino si estaba activo y no se hizo doble clic
+                        // Single click on the already selected piece, do nothing unless you want to deselect
+                        // or have a different behavior. For now, if already selected and not double click, it doesn't change selection
+                        // but it could disable fine tune mode if it was active and not double clicked
                         if (gameState.isFineTuneMode) {
-                            selectPiece(clickedPieceIndex, false); // Desactiva fine tune
+                            selectPiece(clickedPieceIndex, false); // Disable fine tune
                         }
                     }
                 } else {
-                    // Clic en el fondo o en un mesh no pickable, deselecciona y desactiva fine tune
+                    // Click on the background or a non-pickable mesh, deselect and disable fine tune
                     if (gameState.pieces[gameState.selectedPieceIndex]) {
                         gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
                             block.renderOutline = false; // Disable outline for previously selected
@@ -1252,17 +1252,17 @@
                         });
                     }
                     gameState.isFineTuneMode = false;
-                    document.getElementById('fineTuneStatus').textContent = 'DESACTIVADO'; // Update UI
-                    // No hay pieza seleccionada, o puedes optar por mantener la última seleccionada pero sin resaltado.
-                    // Para este juego, la deselección no está definida, así que mantendremos el último índice seleccionado
-                    // pero visualmente no resaltado.
+                    document.getElementById('fineTuneStatus').textContent = 'DEACTIVATED'; // Update UI
+                    // No piece selected, or you can choose to keep the last selected index but not highlighted.
+                    // For this game, deselection is not defined, so we will keep the last selected index
+                    // but visually not highlighted.
                 }
 
                 gameState.lastClickTime = currentTime;
             });
         }
 
-        // Iniciar el juego cuando el DOM esté listo
+        // Start the game when the DOM is ready
         window.addEventListener('DOMContentLoaded', initGame);
     </script>
 </body>

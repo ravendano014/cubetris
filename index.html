@@ -111,6 +111,40 @@
             max-width: 300px; /* Limit width */
             box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Add a subtle shadow */
         }
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .control-row button {
+            width: calc(33% - 5px); /* Adjust width for 3 buttons per row */
+            margin: 0;
+            padding: 8px;
+            font-size: 14px;
+        }
+        .large-btn {
+            width: 100%;
+        }
+        /* New button styles for scatter and check */
+        .scatter-btn {
+            background-color: #4CAF50; /* Green */
+        }
+        .scatter-btn:hover {
+            background-color: #45a049;
+        }
+        .check-btn {
+            background-color: #F44336; /* Red */
+        }
+        .check-btn:hover {
+            background-color: #D32F2F;
+        }
+        /* New button style for reset */
+        .reset-btn {
+            background-color: #007bff; /* Blue */
+        }
+        .reset-btn:hover {
+            background-color: #0056b3;
+        }
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
@@ -118,24 +152,45 @@
 <body>
     <canvas id="renderCanvas"></canvas>
     <div id="ui">
-        <h2>Cubetris 4x4</h2>
-        <p>Nivel: <span id="levelDisplay">1</span></p>
-        <p>Ajuste Fino: <span id="fineTuneStatus">DESACTIVADO</span></p>
-        <p>Instrucciones:</p>
-        <ul>
-            <li>E/D: Mover pieza en X</li>
-            <li>T/G: Mover pieza en Y</li>
-            <li>Q/W: Mover pieza en Z</li>
-            <li>R: Rotar pieza</li>
-            <li>Espacio: Cambiar pieza</li>
-            <li>Clic: Seleccionar pieza</li>
-            <li>Doble clic o tecla M: Activar/Desactivar Ajuste fino (desplazamiento muy preciso)</li>
-        </ul>
-        
+        <h2>CubeTris</h2>
+        <div style="font-size: 0.85em;">
+            <p>Nivel: <span id="levelDisplay">1</span></p>
+            <p>Ajuste Fino: <span id="fineTuneStatus">DESACTIVADO</span></p>
+            <p>Instrucciones:</p>
+            <ul>
+                <li>E/D: Mover pieza en X</li>
+                <li>T/G: Mover pieza en Y</li>
+                <li>Q/W: Mover pieza en Z</li>
+                <li>R: Rotar pieza</li>
+                <li>Espacio: Cambiar pieza</li>
+                <li>Clic: Seleccionar pieza</li>
+                <li>Doble clic o tecla M: Activar/Desactivar Ajuste fino (desplazamiento muy preciso)</li>
+                <li>Tecla D: Dispersar piezas</li>
+                <li>Tecla V: Verificar cubo</li>
+            </ul>
+        </div>
         
         <div id="controls">
-            <button id="scatterBtn" class="control-btn">Dispersar Piezas</button>
-            <button id="checkBtn" class="control-btn">Verificar Cubo</button>
+            <div class="control-row">
+                <button class="control-btn scatter-btn" id="btnScatter">D (Dispersar)</button>
+                <button class="control-btn check-btn" id="btnCheck">V (Verificar)</button>
+                <button class="control-btn reset-btn" id="btnReset">Reiniciar</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn" id="btnE">E (Der. X)</button>
+                <button class="control-btn" id="btnT">T (Arr. Y)</button>
+                <button class="control-btn" id="btnQ">Q (Avan. Z)</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn" id="btnD">D (Izq. X)</button>
+                <button class="control-btn" id="btnG">G (Aba. Y)</button>
+                <button class="control-btn" id="btnW">W (Atrás Z)</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn" id="btnR">R (Rotar)</button>
+                <button class="control-btn" id="btnSpace">Espacio (Cambiar Pieza)</button>
+                <button class="control-btn" id="btnM">M (Ajuste Fino)</button>
+            </div>
             <button id="solveBtn" class="control-btn solve-btn">Resolver Puzzle</button>
             <button id="resetCameraBtn" class="control-btn">Reiniciar Cámara</button>
         </div>
@@ -262,11 +317,28 @@
         }
 
         function setupUI() {
-            document.getElementById('scatterBtn').addEventListener('click', scatterPieces);
-            document.getElementById('checkBtn').addEventListener('click', checkPuzzleComplete);
+            document.getElementById('btnScatter').addEventListener('click', scatterPieces);
+            document.getElementById('btnCheck').addEventListener('click', checkPuzzleComplete);
+            document.getElementById('btnReset').addEventListener('click', resetGame); // Event listener for new reset button
             document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
             document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
-            document.getElementById('resetCameraBtn').addEventListener('click', resetCamera); // Add this line
+            document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
+
+            // Button controls
+            document.getElementById('btnE').addEventListener('click', () => moveSelectedPiece('right'));
+            document.getElementById('btnT').addEventListener('click', () => moveSelectedPiece('up'));
+            document.getElementById('btnQ').addEventListener('click', () => moveSelectedPiece('forward'));
+            document.getElementById('btnD').addEventListener('click', () => moveSelectedPiece('left'));
+            document.getElementById('btnG').addEventListener('click', () => moveSelectedPiece('down'));
+            document.getElementById('btnW').addEventListener('click', () => moveSelectedPiece('backward'));
+            document.getElementById('btnR').addEventListener('click', rotateSelectedPiece);
+            document.getElementById('btnSpace').addEventListener('click', () => selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length));
+            document.getElementById('btnM').addEventListener('click', toggleFineTuneMode);
+        }
+
+        function resetGame() {
+            gameState.currentLevel = 1;
+            startLevel(gameState.currentLevel);
         }
 
         function startLevel(level) {
@@ -338,9 +410,9 @@
             // Segunda cuadrícula de referencia (20x20)
             const secondGridSize = 20;
             const secondHalfSize = (secondGridSize * gameState.gridSize) / 2;
-            const secondGridLines = [];
             const offsetY = -(gameState.targetCubeSize * gameState.gridSize) / 2 - gameState.gridSize; // Posición debajo de la cuadrícula principal
 
+            const secondGridLines = [];
             for (let x = -secondHalfSize; x <= secondHalfSize; x += gameState.gridSize) {
                 secondGridLines.push([new BABYLON.Vector3(x, offsetY, -secondHalfSize), new BABYLON.Vector3(x, offsetY, secondHalfSize)]);
             }
@@ -1017,12 +1089,14 @@
                 't': 'up',
                 'g': 'down',
                 'e': 'right',
-                'd': 'left',
+                'd': 'left', // This 'd' is for moving left
                 'q': 'forward',
                 'w': 'backward',
                 'r': 'rotate',
                 ' ': 'change',
-                'm': 'toggleFineTune' // Añadida la tecla 'm' para el ajuste fino
+                'm': 'toggleFineTune',
+                'd': 'scatter', // New 'd' for scatter
+                'v': 'check'    // New 'v' for check
             };
             
             document.addEventListener('keydown', (e) => {
@@ -1031,25 +1105,30 @@
                 
                 e.preventDefault();
                 
-                switch (action) {
-                    case 'up':
-                    case 'down':
-                    case 'left':
-                    case 'right':
-                    case 'forward':
-                    case 'backward':
-                        moveSelectedPiece(action);
-                        break;
-                    case 'rotate':
-                        rotateSelectedPiece();
-                        break;
-                    case 'change':
-                        // Only change piece with spacebar, not affecting fine-tune mode immediately
-                        selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length);
-                        break;
-                    case 'toggleFineTune':
-                        toggleFineTuneMode();
-                        break;
+                if (action === 'scatter') {
+                    scatterPieces();
+                } else if (action === 'check') {
+                    checkPuzzleComplete();
+                } else {
+                    switch (action) {
+                        case 'up':
+                        case 'down':
+                        case 'left':
+                        case 'right':
+                        case 'forward':
+                        case 'backward':
+                            moveSelectedPiece(action);
+                            break;
+                        case 'rotate':
+                            rotateSelectedPiece();
+                            break;
+                        case 'change':
+                            selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length);
+                            break;
+                        case 'toggleFineTune':
+                            toggleFineTuneMode();
+                            break;
+                    }
                 }
             });
         }

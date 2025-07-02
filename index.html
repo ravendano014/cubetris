@@ -735,7 +735,7 @@
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             
             // Determine displacement amount
-            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 16 : gameState.gridSize; // Changed to /16 for higher precision
+            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 16 : gameState.gridSize / 2; // Changed to /16 for higher precision
 
             switch (direction) {
                 case 'up': 

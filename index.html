@@ -154,17 +154,17 @@
         }
 
         /* Styles for on-screen D-pad and controls */
-        #onScreenControls {
+#onScreenControls {
             position: absolute;
             bottom: 10px;
-            right: 10px; /* Línea modificada */
+            right: 10px;
             z-index: 10;
             display: grid;
-            grid-template-columns: repeat(3, 60px);
-            grid-template-rows: repeat(4, 60px);
-            gap: 5px;
+            grid-template-columns: repeat(3, 120px); /* Duplicado de 60px */
+            grid-template-rows: repeat(4, 120px);   /* Duplicado de 60px */
+            gap: 10px;                              /* Duplicado de 5px */
             background-color: rgba(0,0,0,0.6);
-            padding: 10px;
+            padding: 20px;                          /* Duplicado de 10px */
             border-radius: 10px;
         }
 
@@ -174,7 +174,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 18px; /* Valor reducido */
+            font-size: 36px; /* Duplicado de 18px */
             border-radius: 8px;
             cursor: pointer;
             user-select: none;
@@ -186,22 +186,21 @@
         #moveLeft { grid-area: 2 / 1 / 3 / 2; }
         #moveRight { grid-area: 2 / 3 / 3 / 4; }
         #moveDown { grid-area: 3 / 2 / 4 / 3; }
-        #moveForward { grid-area: 1 / 3 / 2 / 4; font-size: 14px;} /* Valor reducido */
-        #moveBackward { grid-area: 3 / 1 / 4 / 2; font-size: 14px;} /* Valor reducido */
+        #moveForward { grid-area: 1 / 3 / 2 / 4; font-size: 28px;} /* Duplicado de 14px */
+        #moveBackward { grid-area: 3 / 1 / 4 / 2; font-size: 28px;} /* Duplicado de 14px */
 
         /* Additional controls */
-        #rotateBtn { grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; font-size: 14px;} /* Valor reducido */
+        #rotateBtn { grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; font-size: 28px;} /* Duplicado de 14px */
         #rotateBtn:hover { background-color: #F57C00; }
 
-        #changePieceBtn { grid-area: 4 / 1 / 5 / 2; background-color: #2196F3; font-size: 14px;} /* Valor reducido */
+        #changePieceBtn { grid-area: 4 / 1 / 5 / 2; background-color: #2196F3; font-size: 28px;} /* Duplicado de 14px */
         #changePieceBtn:hover { background-color: #0b7dda; }
 
-        #fineTuneBtn { grid-area: 4 / 2 / 5 / 3; background-color: #9C27B0; font-size: 14px;} /* Valor reducido */
+        #fineTuneBtn { grid-area: 4 / 2 / 5 / 3; background-color: #9C27B0; font-size: 28px;} /* Duplicado de 14px */
         #fineTuneBtn:hover { background-color: #7B1FA2; }
         
-        #solveBtnOnScreen { grid-area: 4 / 3 / 5 / 4; background-color: #4CAF50; font-size: 14px;} /* Valor reducido */
+        #solveBtnOnScreen { grid-area: 4 / 3 / 5 / 4; background-color: #4CAF50; font-size: 28px;} /* Duplicado de 14px */
         #solveBtnOnScreen:hover { background-color: #45a049; }
-
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>

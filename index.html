@@ -152,6 +152,56 @@
         .ok-btn:hover {
             background-color: #e0a800;
         }
+
+        /* Styles for on-screen D-pad and controls */
+        #onScreenControls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px; /* Línea modificada */
+            z-index: 10;
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(4, 60px);
+            gap: 5px;
+            background-color: rgba(0,0,0,0.6);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .dpad-btn {
+            background-color: #333;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px; /* Valor reducido */
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        /* Specific positioning for D-pad like layout */
+        #moveUp { grid-area: 1 / 2 / 2 / 3; }
+        #moveLeft { grid-area: 2 / 1 / 3 / 2; }
+        #moveRight { grid-area: 2 / 3 / 3 / 4; }
+        #moveDown { grid-area: 3 / 2 / 4 / 3; }
+        #moveForward { grid-area: 1 / 3 / 2 / 4; font-size: 14px;} /* Valor reducido */
+        #moveBackward { grid-area: 3 / 1 / 4 / 2; font-size: 14px;} /* Valor reducido */
+
+        /* Additional controls */
+        #rotateBtn { grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; font-size: 14px;} /* Valor reducido */
+        #rotateBtn:hover { background-color: #F57C00; }
+
+        #changePieceBtn { grid-area: 4 / 1 / 5 / 2; background-color: #2196F3; font-size: 14px;} /* Valor reducido */
+        #changePieceBtn:hover { background-color: #0b7dda; }
+
+        #fineTuneBtn { grid-area: 4 / 2 / 5 / 3; background-color: #9C27B0; font-size: 14px;} /* Valor reducido */
+        #fineTuneBtn:hover { background-color: #7B1FA2; }
+        
+        #solveBtnOnScreen { grid-area: 4 / 3 / 5 / 4; background-color: #4CAF50; font-size: 14px;} /* Valor reducido */
+        #solveBtnOnScreen:hover { background-color: #45a049; }
+
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
@@ -160,21 +210,13 @@
     <canvas id="renderCanvas"></canvas>
     <div id="ui">
         <h2>Cubetris</h2>
-        <div style="font-size: 0.85em;">
+        <div id="referenceImageContainer" style="display: none; margin-top: 10px; text-align: center;">
+            <p style="margin-bottom: 5px; font-weight: bold;">Reference:</p>
+            <img id="referenceImage" src="" alt="Assembled Cube Reference" style="width: 100%; border: 1px solid #555; border-radius: 5px;">
+        </div>
+        <div id="gameInfo">
             <p>Level: <span id="levelDisplay">1</span></p>
             <p>Fine Tune: <span id="fineTuneStatus">DEACTIVATED</span></p>
-            <p>Instructions:</p>
-            <ul>
-                <li>A/D: Move piece in X</li>
-                <li>W/S: Move piece in Y</li>
-                <li>Q/E: Move piece in Z</li>
-                <li>R: Rotate piece</li>
-                <li>Space: Change piece</li>
-                <li>Click: Select piece</li>
-                <li>Double click or M key: Toggle Fine Tune (very precise movement)</li>
-                <li>P: Scatter pieces</li>
-                <li>V: Check cube</li>
-            </ul>
         </div>
         
         <div id="controls">
@@ -184,22 +226,6 @@
                 <button class="control-btn reset-btn" id="btnReset">Reset</button>
             </div>
             <button class="control-btn ok-btn" id="btnItsOk">Its Ok for Me</button>
-            <div class="control-row">
-                <button class="control-btn" id="btnA">A (Right X)</button>
-                <button class="control-btn" id="btnW">W (Up Y)</button>
-                <button class="control-btn" id="btnQ">Q (Forward Z)</button>
-            </div>
-            <div class="control-row">
-                <button class="control-btn" id="btnD">D (Left X)</button>
-                <button class="control-btn" id="btnS">S (Down Y)</button>
-                <button class="control-btn" id="btnE">E (Backward Z)</button>
-            </div>
-            <div class="control-row">
-                <button class="control-btn" id="btnR">R (Rotate)</button>
-                <button class="control-btn" id="btnSpace">Space (Change Piece)</button>
-                <button class="control-btn" id="btnM">M (Fine Tune)</button>
-            </div>
-            <button id="solveBtn" class="control-btn solve-btn">Solve Puzzle</button>
             <button id="resetCameraBtn" class="control-btn">Reset Camera</button>
         </div>
     </div>
@@ -209,6 +235,19 @@
         <button id="nextLevelBtn">Next level</button>
     </div>
     <div id="errorMsg"></div>
+
+    <div id="onScreenControls">
+        <div class="dpad-btn" id="moveUp">&#9650;</div>
+        <div class="dpad-btn" id="moveLeft">&#9664;</div>
+        <div class="dpad-btn" id="moveRight">&#9654;</div>
+        <div class="dpad-btn" id="moveDown">&#9660;</div> 
+        <div class="dpad-btn" id="moveForward">Fwd Z</div>
+        <div class="dpad-btn" id="moveBackward">Bwd Z</div>
+        <div class="dpad-btn" id="rotateBtn">Rotate</div>
+        <div class="dpad-btn" id="changePieceBtn">Change</div>
+        <div class="dpad-btn" id="fineTuneBtn">FineTune</div>
+        <div class="dpad-btn" id="solveBtnOnScreen">Solve</div>
+    </div>
 
     <script>
         // Optimized global variables
@@ -227,7 +266,8 @@
             animationFrame: null,
             isFineTuneMode: false, // New: fine tune mode
             lastClickTime: 0, // New: for double click detection
-            doubleClickThreshold: 300 // ms
+            doubleClickThreshold: 300, // ms
+            referenceImageTakenForCurrentAssembly: false // New: Flag to track if screenshot taken for current assembly
         };
 
         // Constants
@@ -330,19 +370,19 @@
             document.getElementById('btnReset').addEventListener('click', resetGame); // Event listener for new reset button
             document.getElementById('btnItsOk').addEventListener('click', checkProximityAndOverlap); // New button for proximity and overlap
             document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
-            document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
             document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
 
-            // Button controls
-            document.getElementById('btnA').addEventListener('click', () => moveSelectedPiece('right'));
-            document.getElementById('btnW').addEventListener('click', () => moveSelectedPiece('up'));
-            document.getElementById('btnQ').addEventListener('click', () => moveSelectedPiece('forward'));
-            document.getElementById('btnD').addEventListener('click', () => moveSelectedPiece('left'));
-            document.getElementById('btnS').addEventListener('click', () => moveSelectedPiece('down'));
-            document.getElementById('btnE').addEventListener('click', () => moveSelectedPiece('backward'));
-            document.getElementById('btnR').addEventListener('click', rotateSelectedPiece);
-            document.getElementById('btnSpace').addEventListener('click', () => selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length));
-            document.getElementById('btnM').addEventListener('click', toggleFineTuneMode);
+            // On-screen D-pad and action controls
+            document.getElementById('moveUp').addEventListener('click', () => moveSelectedPiece('up'));
+            document.getElementById('moveDown').addEventListener('click', () => moveSelectedPiece('down'));
+            document.getElementById('moveLeft').addEventListener('click', () => moveSelectedPiece('left'));
+            document.getElementById('moveRight').addEventListener('click', () => moveSelectedPiece('right'));
+            document.getElementById('moveForward').addEventListener('click', () => moveSelectedPiece('forward'));
+            document.getElementById('moveBackward').addEventListener('click', () => moveSelectedPiece('backward'));
+            document.getElementById('rotateBtn').addEventListener('click', rotateSelectedPiece);
+            document.getElementById('changePieceBtn').addEventListener('click', () => selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length));
+            document.getElementById('fineTuneBtn').addEventListener('click', toggleFineTuneMode);
+            document.getElementById('solveBtnOnScreen').addEventListener('click', solvePuzzle); // Solve button
         }
 
         function resetGame() {
@@ -360,7 +400,8 @@
             gameState.selectedPieceIndex = 0;
             gameState.isScattered = false;
             gameState.isFineTuneMode = false; // Reset fine tune mode on level start
-            
+            gameState.referenceImageTakenForCurrentAssembly = false; // Reset flag for new level
+
             // Logic to define targetCubeSize based on level
             if (level <= 2) {
                 gameState.targetCubeSize = 2; // Level 1 and 2: 2x2 grid
@@ -373,11 +414,19 @@
             document.getElementById('levelDisplay').textContent = gameState.currentLevel;
             document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED'; // Update fine tune status
             document.getElementById('levelComplete').style.display = 'none';
-            document.getElementById('solveBtn').disabled = false;
+            document.getElementById('solveBtnOnScreen').disabled = false; // Enable the on-screen solve button
+
+            // Clear and hide reference image
+            const referenceImageContainer = document.getElementById('referenceImageContainer');
+            const referenceImage = document.getElementById('referenceImage');
+            referenceImage.src = '';
+            referenceImageContainer.style.display = 'none';
             
             createTargetCube();
+            createGrid();
             createPiecesForLevel(level);
             assemblePieces();
+            captureReferenceImage(); // Capture reference image right after assembling for the new level
             selectPiece(0); // Select the first piece by default
         }
 
@@ -400,7 +449,7 @@
             wireMat.alpha = 0.3;
             wireframe.material = wireMat;
             
-            createGrid();
+            
         }
 
         function createGrid() {
@@ -441,76 +490,7 @@
             secondGrid.alpha = 0.2; // More transparent
         }
 
-        function createPiecesForLevel(level) {
-            const numPieces = 4 + Math.floor(level / 2);
-            if (numPieces > 10) numPieces = 10;
-            
-            const allBlocks = [];
-            const halfSize = Math.floor(gameState.targetCubeSize / 2) - 0.5;
-            
-            // Generate all possible positions
-            for (let x = -halfSize; x <= halfSize; x++) {
-                for (let y = -halfSize; y <= halfSize; y++) {
-                    for (let z = -halfSize; z <= halfSize; z++) {
-                        allBlocks.push(new BABYLON.Vector3(x, y, z));
-                    }
-                }
-            }
-            
-            // Divide into pieces ensuring adjacency
-            const blocksPerPiece = Math.floor(allBlocks.length / numPieces);
-            
-            for (let i = 0; i < numPieces; i++) {
-                const pieceBlocks = [];
-                const blocksToTake = (i === numPieces - 1) ? allBlocks.length : blocksPerPiece;
-                
-                if (allBlocks.length > 0) {
-                    const startIndex = Math.floor(Math.random() * allBlocks.length);
-                    pieceBlocks.push(allBlocks[startIndex]);
-                    allBlocks.splice(startIndex, 1);
-                    
-                    // Ensure adjacent blocks
-                    for (let j = 1; j < blocksToTake && allBlocks.length > 0; j++) {
-                        let addedBlock = false;
-                        
-                        // Search for adjacent first
-                        for (let k = 0; k < allBlocks.length && !addedBlock; k++) {
-                            const testBlock = allBlocks[k];
-                            
-                            for (let l = 0; l < pieceBlocks.length; l++) {
-                                if (areBlocksAdjacent(testBlock, pieceBlocks[l])) {
-                                    pieceBlocks.push(testBlock);
-                                    allBlocks.splice(k, 1);
-                                    addedBlock = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // If no adjacents, add any block
-                        if (!addedBlock && allBlocks.length > 0) {
-                            const randomIndex = Math.floor(Math.random() * allBlocks.length);
-                            pieceBlocks.push(allBlocks[randomIndex]);
-                            allBlocks.splice(randomIndex, 1);
-                        }
-                    }
-                }
-                
-                createPiece(pieceBlocks, i);
-            }
-        }
-
-        function areBlocksAdjacent(block1, block2) {
-            const dx = Math.abs(block1.x - block2.x);
-            const dy = Math.abs(block1.y - block2.y);
-            const dz = Math.abs(block1.z - block2.z);
-            
-            return (dx === 1 && dy === 0 && dz === 0) ||
-                   (dx === 0 && dy === 1 && dz === 0) ||
-                   (dx === 0 && dy === 0 && dz === 1);
-        }
-
-        function createPiece(blockPositions, pieceIndex) {
+        function createPieces(blockPositions, pieceIndex) {
             const piece = {
                 blocks: [],
                 root: new BABYLON.TransformNode(`pieceRoot${pieceIndex}`, gameState.scene),
@@ -589,6 +569,75 @@
             return piece;
         }
 
+        function createPiecesForLevel(level) {
+            const numPieces = 4 + Math.floor(level / 2);
+            if (numPieces > 10) numPieces = 10;
+            
+            const allBlocks = [];
+            const halfSize = Math.floor(gameState.targetCubeSize / 2) - 0.5;
+            
+            // Generate all possible positions
+            for (let x = -halfSize; x <= halfSize; x++) {
+                for (let y = -halfSize; y <= halfSize; y++) {
+                    for (let z = -halfSize; z <= halfSize; z++) {
+                        allBlocks.push(new BABYLON.Vector3(x, y, z));
+                    }
+                }
+            }
+            
+            // Divide into pieces ensuring adjacency
+            const blocksPerPiece = Math.floor(allBlocks.length / numPieces);
+            
+            for (let i = 0; i < numPieces; i++) {
+                const pieceBlocks = [];
+                const blocksToTake = (i === numPieces - 1) ? allBlocks.length : blocksPerPiece;
+                
+                if (allBlocks.length > 0) {
+                    const startIndex = Math.floor(Math.random() * allBlocks.length);
+                    pieceBlocks.push(allBlocks[startIndex]);
+                    allBlocks.splice(startIndex, 1);
+                    
+                    // Ensure adjacent blocks
+                    for (let j = 1; j < blocksToTake && allBlocks.length > 0; j++) {
+                        let addedBlock = false;
+                        
+                        // Search for adjacent first
+                        for (let k = 0; k < allBlocks.length && !addedBlock; k++) {
+                            const testBlock = allBlocks[k];
+                            
+                            for (let l = 0; l < pieceBlocks.length; l++) {
+                                if (areBlocksAdjacent(testBlock, pieceBlocks[l])) {
+                                    pieceBlocks.push(testBlock);
+                                    allBlocks.splice(k, 1);
+                                    addedBlock = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // If no adjacents, add any block
+                        if (!addedBlock && allBlocks.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * allBlocks.length);
+                            pieceBlocks.push(allBlocks[randomIndex]);
+                            allBlocks.splice(randomIndex, 1);
+                        }
+                    }
+                }
+                
+                createPieces(pieceBlocks, i);
+            }
+        }
+
+        function areBlocksAdjacent(block1, block2) {
+            const dx = Math.abs(block1.x - block2.x);
+            const dy = Math.abs(block1.y - block2.y);
+            const dz = Math.abs(block1.z - block2.z);
+            
+            return (dx === 1 && dy === 0 && dz === 0) ||
+                   (dx === 0 && dy === 1 && dz === 0) ||
+                   (dx === 0 && dy === 0 && dz === 1);
+        }
+
         function assemblePieces() {
             gameState.pieces.forEach(piece => {
                 piece.position = piece.assembledPosition.clone();
@@ -599,6 +648,43 @@
             });
             gameState.isScattered = false;
         }
+
+        function captureReferenceImage() {
+            if (!gameState.referenceImageTakenForCurrentAssembly) {
+                // Ocultar elementos específicos de la UI que no queremos en la captura
+                const gameInfo = document.getElementById('gameInfo');
+                const controls = document.getElementById('controls');
+                const levelComplete = document.getElementById('levelComplete');
+                const errorMsg = document.getElementById('errorMsg');
+                const onScreenControls = document.getElementById('onScreenControls'); // Hide on-screen controls too
+
+                if (gameInfo) gameInfo.style.display = 'none';
+                if (controls) controls.style.display = 'none';
+                if (levelComplete) levelComplete.style.display = 'none';
+                if (errorMsg) errorMsg.style.display = 'none';
+                if (onScreenControls) onScreenControls.style.display = 'none';
+
+
+                // Add a small delay to ensure the scene has rendered the assembled state
+                setTimeout(() => {
+                    BABYLON.ScreenshotTools.CreateScreenshot(gameState.engine, gameState.camera, { width: 512, height: 512, precision: 1 }, (data) => {
+                        const referenceImage = document.getElementById('referenceImage');
+                        const referenceImageContainer = document.getElementById('referenceImageContainer');
+                        referenceImage.src = data;
+                        referenceImageContainer.style.display = 'block';
+
+                        // Restaurar la visibilidad de los elementos de la UI
+                        if (gameInfo) gameInfo.style.display = 'block';
+                        if (controls) controls.style.display = 'block';
+                        if (onScreenControls) onScreenControls.style.display = 'grid'; // Restore on-screen controls
+                        // levelComplete y errorMsg se manejan por otra lógica, no se restauran aquí.
+
+                        gameState.referenceImageTakenForCurrentAssembly = true; // Mark as captured
+                    });
+                }, 50); // A small delay (e.g., 50ms) to allow rendering
+            }
+        }
+
 
         function scatterPieces() {
             if (gameState.isScattered || gameState.isAnimating) return;
@@ -894,7 +980,7 @@
             
             // Disable controls during solving
             gameState.isAnimating = true;
-            document.getElementById('solveBtn').disabled = true;
+            document.getElementById('solveBtnOnScreen').disabled = true; // Disable the on-screen solve button
             
             // Solve piece by piece with a delay between them
             let currentPieceIndex = 0;
@@ -902,7 +988,7 @@
                 if (currentPieceIndex >= gameState.pieces.length) {
                     // Solution completed
                     gameState.isAnimating = false;
-                    document.getElementById('solveBtn').disabled = false;
+                    document.getElementById('solveBtnOnScreen').disabled = false; // Re-enable the on-screen solve button
                     checkPuzzleComplete(); // Show completion message
                     return;
                 }

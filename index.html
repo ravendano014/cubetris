@@ -399,6 +399,25 @@
             gameState.isFineTuneMode = false; // Reset fine tune mode on level start
             gameState.referenceImageTakenForCurrentAssembly = false; // Reset flag for new level
 
+            let levelColorMode = 'normal'; // default
+
+            // Define a sequence of color modes
+            // The 'normal' mode uses the COLORS array.
+            // Other modes generate random shades within a color scale.
+            const colorModes = ['normal', 'grayscale', 'yellow', 'red', 'blue', 'green', 'purple', 'orange', 'checkers']; // Added checkers
+            
+            if (level <= 2) {
+                levelColorMode = 'normal';
+            } else {
+                // effectiveLevel starts at 0 for level 3, 1 for level 4, etc.
+                const effectiveLevel = level - 3; 
+                // modeIndex cycles from 1 to 8 (grayscale to checkers)
+                // (colorModes.length - 1) is 8, so % 8 gives 0-7. Add 1 to get 1-8.
+                const modeIndex = (effectiveLevel % (colorModes.length - 1)) + 1; 
+                levelColorMode = colorModes[modeIndex];
+            }
+
+
             // Logic to define targetCubeSize based on level
             if (level <= 2) {
                 gameState.targetCubeSize = 2; // Level 1 and 2: 2x2 grid
@@ -426,7 +445,7 @@
             
             createTargetCube();
             createGrid();
-            createPiecesForLevel(level);
+            createPiecesForLevel(level, levelColorMode); // Pass the flag
             assemblePieces();
             captureReferenceImage(); // Capture reference image right after assembling for the new level
             selectPiece(0); // Select the first piece by default
@@ -492,7 +511,16 @@
             secondGrid.alpha = 0.2; // More transparent
         }
 
-        function createPieces(blockPositions, pieceIndex) {
+        // Helper function to create materials to avoid repetition
+        function createMaterial(color, scene) {
+            const material = new BABYLON.StandardMaterial("material", scene);
+            material.diffuseColor = color;
+            material.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+            material.emissiveColor = new BABYLON.Color3(0, 0, 0); // No emissive by default
+            return material;
+        }
+
+        function createPieces(blockPositions, pieceIndex, levelColorMode) { // Changed parameter
             const piece = {
                 blocks: [],
                 root: new BABYLON.TransformNode(`pieceRoot${pieceIndex}`, gameState.scene),
@@ -509,26 +537,15 @@
             blockPositions.forEach(pos => center.addInPlace(pos));
             center.scaleInPlace(1.0 / blockPositions.length);
             
-            // Define two materials for each piece: normal and darker for outer blocks
-            const normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
-            normalMaterial.diffuseColor = COLORS[pieceIndex % COLORS.length];
-            normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-            normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-
-            const darkerColor = COLORS[pieceIndex % COLORS.length].scale(0.6); // Make it 40% darker
-            const darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
-            darkerMaterial.diffuseColor = darkerColor;
-            darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-            darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-
             // Store the assembled position of the piece itself
             const pieceAssembledGlobalPosition = new BABYLON.Vector3(
                 center.x * gameState.gridSize,
                 center.y * gameState.gridSize,
                 center.z * gameState.gridSize
             );
-            
-            // Create blocks
+            piece.assembledPosition = pieceAssembledGlobalPosition;
+
+            // Create blocks and assign materials based on color mode
             blockPositions.forEach((pos, index) => {
                 const block = BABYLON.MeshBuilder.CreateBox(
                     `block${pieceIndex}_${index}`, 
@@ -541,37 +558,80 @@
                 block.position = relativePos.clone();
                 piece.originalPositions.push(relativePos.clone());
                 
-                // Determine if this block is on the outer layer of the final cube
-                const absoluteBlockX = pos.x;
-                const absoluteBlockY = pos.y;
-                const absoluteBlockZ = pos.z;
-                
-                const halfTargetSize = gameState.targetCubeSize / 2;
-
-                let isOuterBlock = false;
-                // Check if the block is on the boundary in any dimension
-                if (Math.abs(absoluteBlockX) === halfTargetSize - 0.5 ||
-                    Math.abs(absoluteBlockY) === halfTargetSize - 0.5 ||
-                    Math.abs(absoluteBlockZ) === halfTargetSize - 0.5) {
-                    isOuterBlock = true;
-                }
-
-                block.material = isOuterBlock ? darkerMaterial : normalMaterial;
-                
                 block.isPickable = true; 
                 block.pieceIndex = pieceIndex; 
                 
                 piece.blocks.push(block);
+
+                let materialToApply;
+                // Generate a random value between 0.5 and 1.0 for dynamic color components
+                const randomComponent = 0.5 + Math.random() * 0.5; 
+
+                switch (levelColorMode) {
+                    case 'grayscale':
+                        const grayValue = 0.3 + Math.random() * 0.5; 
+                        materialToApply = createMaterial(new BABYLON.Color3(grayValue, grayValue, grayValue), gameState.scene);
+                        break;
+                    case 'yellow':
+                        // Yellow is Red + Green. Vary green component to get shades of yellow.
+                        materialToApply = createMaterial(new BABYLON.Color3(1, randomComponent, 0), gameState.scene); 
+                        break;
+                    case 'red':
+                        // Vary red component to get shades of red.
+                        materialToApply = createMaterial(new BABYLON.Color3(randomComponent, 0, 0), gameState.scene); 
+                        break;
+                    case 'blue':
+                        // Vary blue component to get shades of blue.
+                        materialToApply = createMaterial(new BABYLON.Color3(0, 0, randomComponent), gameState.scene); 
+                        break;
+                    case 'green':
+                        // Vary green component to get shades of green.
+                        materialToApply = createMaterial(new BABYLON.Color3(0, randomComponent, 0), gameState.scene); 
+                        break;
+                    case 'purple': // New case for purple
+                        const purpleValue = 0.5 + Math.random() * 0.5;
+                        materialToApply = createMaterial(new BABYLON.Color3(purpleValue, 0, purpleValue), gameState.scene); 
+                        break;
+                    case 'orange': // New case for orange
+                        const orangeGreenValue = 0.2 + Math.random() * 0.4; // Range from 0.2 to 0.6
+                        materialToApply = createMaterial(new BABYLON.Color3(1, orangeGreenValue, 0), gameState.scene); 
+                        break;
+                    case 'checkers': // New case for checkers
+                        const snappedX = Math.round(relativePos.x / gameState.gridSize);
+                        const snappedY = Math.round(relativePos.y / gameState.gridSize);
+                        const snappedZ = Math.round(relativePos.z / gameState.gridSize);
+                        if ((snappedX + snappedY + snappedZ) % 2 === 0) {
+                            materialToApply = createMaterial(new BABYLON.Color3(1, 1, 1), gameState.scene); // White
+                        } else {
+                            materialToApply = createMaterial(new BABYLON.Color3(0, 0, 0), gameState.scene); // Black
+                        }
+                        break;
+                    case 'normal': 
+                    default:
+                        // Use existing color logic for normal mode, including darker for outer blocks
+                        const originalPieceColor = COLORS[pieceIndex % COLORS.length];
+                        const halfTargetSize = gameState.targetCubeSize / 2;
+                        
+                        // Check if this block is on the outer layer of the final cube
+                        const absoluteBlockX = pos.x;
+                        const absoluteBlockY = pos.y;
+                        const absoluteBlockZ = pos.z;
+
+                        let isOuterBlock = false;
+                        if (Math.abs(absoluteBlockX) === halfTargetSize - 0.5 ||
+                            Math.abs(absoluteBlockY) === halfTargetSize - 0.5 ||
+                            Math.abs(absoluteBlockZ) === halfTargetSize - 0.5) {
+                            isOuterBlock = true;
+                        }
+                        materialToApply = createMaterial(isOuterBlock ? originalPieceColor.scale(0.6) : originalPieceColor, gameState.scene);
+                        break;
+                }
+                block.material = materialToApply;
             });
-            
-            // Save assembled position
-            piece.assembledPosition = pieceAssembledGlobalPosition;
-            
-            gameState.pieces.push(piece);
             return piece;
         }
 
-        function createPiecesForLevel(level) {
+        function createPiecesForLevel(level, levelColorMode) { // Changed parameter
             let numPieces;
             if (level === 14) {
                 numPieces = 8; // Limit to 8 pieces for level 14
@@ -643,7 +703,7 @@
                     }
                 }
                 
-                createPieces(pieceBlocks, i);
+                createPieces(pieceBlocks, i, levelColorMode); // Pass levelColorMode
             }
         }
 

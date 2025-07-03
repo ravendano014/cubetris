@@ -404,16 +404,15 @@
             // Define a sequence of color modes
             // The 'normal' mode uses the COLORS array.
             // Other modes generate random shades within a color scale.
-            const colorModes = ['normal', 'grayscale', 'yellow', 'red', 'blue', 'green'];
+            const colorModes = ['normal', 'grayscale', 'yellow', 'red', 'blue', 'green', 'purple', 'orange']; // Added purple and orange
             
             if (level <= 2) {
                 levelColorMode = 'normal';
             } else {
-                // Levels 3, 4, 5, 6, 7 map to 0, 1, 2, 3, 4 index for cycling through special modes.
                 // effectiveLevel starts at 0 for level 3, 1 for level 4, etc.
                 const effectiveLevel = level - 3; 
-                // modeIndex cycles from 1 to 5 (grayscale to green)
-                // (colorModes.length - 1) is 5, so % 5 gives 0-4. Add 1 to get 1-5.
+                // modeIndex cycles from 1 to 7 (grayscale to orange)
+                // (colorModes.length - 1) is 7, so % 7 gives 0-6. Add 1 to get 1-7.
                 const modeIndex = (effectiveLevel % (colorModes.length - 1)) + 1; 
                 levelColorMode = colorModes[modeIndex];
             }
@@ -553,6 +552,14 @@
                 case 'green':
                     // Vary green component to get shades of green.
                     pieceColor = new BABYLON.Color3(0, randomComponent, 0); 
+                    break;
+                case 'purple': // New case for purple
+                    const purpleValue = 0.5 + Math.random() * 0.5;
+                    pieceColor = new BABYLON.Color3(purpleValue, 0, purpleValue); 
+                    break;
+                case 'orange': // New case for orange
+                    const orangeGreenValue = 0.2 + Math.random() * 0.4; // Range from 0.2 to 0.6
+                    pieceColor = new BABYLON.Color3(1, orangeGreenValue, 0); 
                     break;
                 case 'normal': 
                 default:

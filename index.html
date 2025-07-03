@@ -117,7 +117,7 @@
             margin-bottom: 5px;
         }
         .control-row button {
-            width: calc(33% - 5px); /* Adjust width for 3 buttons per row */
+            width: calc(50% - 5px); /* Adjust width for 3 buttons per row */
             margin: 0;
             padding: 8px;
             font-size: 14px;
@@ -217,14 +217,14 @@
         </div>
         
         <div id="controls">
-            <div class="control-row">
-                <button class="control-btn scatter-btn" id="btnScatter">P (Scatter)</button>
-                <button class="control-btn check-btn" id="btnCheck">V (Check)</button>
-                <button class="control-btn reset-btn" id="btnReset">Reset</button>
-            </div>
+            <button class="control-btn scatter-btn" id="btnScatter">P <br>(Scatter)</button>
+            <button class="control-btn check-btn" id="btnCheck">V <br>(Check)</button>
             <button class="control-btn ok-btn" id="btnItsOk">Its Ok for Me</button>
-            <button id="resetCameraBtn" class="control-btn">Reset Camera</button>
-            <button id="solveBtn" class="control-btn solve-btn">Solve Puzzle</button>
+            <div class="control-row">
+                <button id="resetCameraBtn" class="control-btn">Reset Camera</button>
+                <button class="control-btn reset-btn" id="btnReset">Restart</button>
+            </div>
+            <button id="solveBtn" class="control-btn solve-btn">Solve <br>Puzzle</button>
         </div>
     </div>
     <div id="levelComplete">
@@ -235,7 +235,7 @@
     <div id="errorMsg"></div>
 
     <div id="onScreenControls">
-        <div class="dpad-btn" id="changePieceBtn">Change</div>
+        <div class="dpad-btn" id="changePieceBtn">Switch</div>
         <div class="dpad-btn" id="moveUp">&#9650;</div>
         <div class="dpad-btn" id="moveLeft">&#9664;</div>
         <div class="dpad-btn" id="moveRight">&#9654;</div>
@@ -1131,7 +1131,7 @@
 
             // After checking all pieces and blocks, report errors
             if (outOfBoundsPieces.size > 0) {
-                showError("One or more pieces are outside the grid cube!");
+                showError("One or more pieces are outside the grid cube!, or rotate the piece inside the cube and retry");
                 outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0))); // Red for out of bounds
             } else if (overlappingPieces.size > 0) {
                 showError("There are overlapping blocks!");

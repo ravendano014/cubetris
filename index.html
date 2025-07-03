@@ -404,8 +404,13 @@
                 gameState.targetCubeSize = 2; // Level 1 and 2: 2x2 grid
             } else if (level <= 6) { // Levels 3, 4, 5, 6: 4x4 grid
                 gameState.targetCubeSize = 4;
-            } else { // Level 7 onwards: 6x6 grid
+            } else if (level <= 13) { // Levels 7 to 13: 6x6 grid
                 gameState.targetCubeSize = 6;
+            } else { // Level 14 onwards: potentially larger grids for increased complexity
+                // For level 14, stick to 6x6, and for subsequent levels increase grid size
+                gameState.targetCubeSize = 6 + Math.floor((level - 13) / 2) * 2; // e.g., Level 14-15: 6x6, Level 16-17: 8x8, etc.
+                // Cap the grid size to prevent it from becoming too large
+                if (gameState.targetCubeSize > 10) gameState.targetCubeSize = 10;
             }
             
             document.getElementById('levelDisplay').textContent = gameState.currentLevel;
@@ -567,8 +572,17 @@
         }
 
         function createPiecesForLevel(level) {
-            const numPieces = 4 + Math.floor(level / 2);
-            if (numPieces > 10) numPieces = 10;
+            let numPieces;
+            if (level === 14) {
+                numPieces = 8; // Limit to 8 pieces for level 14
+            } else if (level < 14) {
+                numPieces = 4 + Math.floor(level / 2);
+                if (numPieces > 10) numPieces = 10;
+            } else { // For levels greater than 14, increase complexity
+                // For example, increase number of pieces but keep it reasonable
+                numPieces = 8 + Math.floor((level - 14) / 2);
+                if (numPieces > 12) numPieces = 12; // Cap max pieces at 12 for extreme levels
+            }
             
             const allBlocks = [];
             const halfSize = Math.floor(gameState.targetCubeSize / 2) - 0.5;
@@ -583,10 +597,18 @@
             }
             
             // Divide into pieces ensuring adjacency
-            const blocksPerPiece = Math.floor(allBlocks.length / numPieces);
-            
+            // Adjust blocksPerPiece logic for higher levels to potentially create more varied shapes
+            let blocksPerPiece = Math.floor(allBlocks.length / numPieces);
+            // For higher levels, increase variance in blocksPerPiece to create more complex shapes
+            if (level > 14) {
+                const minBlocks = Math.max(3, Math.floor(blocksPerPiece * 0.7)); // Ensure pieces aren't too small
+                const maxBlocks = Math.min(allBlocks.length, Math.ceil(blocksPerPiece * 1.3)); // Ensure pieces aren't too big
+                blocksPerPiece = Math.floor(Math.random() * (maxBlocks - minBlocks + 1)) + minBlocks;
+            }
+
             for (let i = 0; i < numPieces; i++) {
                 const pieceBlocks = [];
+                // Distribute remaining blocks if it's the last piece
                 const blocksToTake = (i === numPieces - 1) ? allBlocks.length : blocksPerPiece;
                 
                 if (allBlocks.length > 0) {

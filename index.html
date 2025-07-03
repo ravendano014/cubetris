@@ -237,9 +237,9 @@
     <div id="onScreenControls">
         <div class="dpad-btn" id="changePieceBtn">Switch</div>
         <div class="dpad-btn" id="moveUp">&#9650;</div>
+        <div class="dpad-btn" id="moveDown">&#9660;</div> 
         <div class="dpad-btn" id="moveLeft">&#9664;</div>
         <div class="dpad-btn" id="moveRight">&#9654;</div>
-        <div class="dpad-btn" id="moveDown">&#9660;</div> 
         <div class="dpad-btn" id="moveForward">Fwd Z</div>
         <div class="dpad-btn" id="moveBackward">Bwd Z</div>
         <div class="dpad-btn" id="rotateBtn">Rotate</div>
@@ -985,7 +985,7 @@
                 if (currentPieceIndex >= gameState.pieces.length) {
                     // Solution completed
                     gameState.isAnimating = false;
-                    document.getElementById('solveBtnOnScreen').disabled = false; // Re-enable the on-screen solve button
+                    // document.getElementById('solveBtnOnScreen').disabled = false; // This button ID doesn't exist in the current HTML
                     checkPuzzleComplete(); // Show completion message
                     return;
                 }
@@ -1066,7 +1066,12 @@
             for (let i = 0; i < targetSize; i++) {
                 for (let j = 0; j < targetSize; j++) {
                     for (let k = 0; k < targetSize; k++) {
-                        occupiedGrid.set(`${i}_${j}_${k}`, null); // Initialize as empty
+                        // Convert grid indices to scene coordinates to initialize the map correctly
+                        const gridX = (i - targetSize / 2 + 0.5) * gameState.gridSize;
+                        const gridY = (j - targetSize / 2 + 0.5) * gameState.gridSize;
+                        const gridZ = (k - targetSize / 2 + 0.5) * gameState.gridSize;
+                        const posKey = `${gridX}_${gridY}_${gridZ}`;
+                        occupiedGrid.set(posKey, null); // Initialize as empty
                     }
                 }
             }
@@ -1084,35 +1089,23 @@
                     const actualBlockGlobalY = piece.position.y + rotatedBlockLocalPos.y;
                     const actualBlockGlobalZ = piece.position.z + rotatedBlockLocalPos.z;
 
-                    // Check if the block is within the target cube boundaries with tolerance
-                    // The target cube goes from -halfSize to +halfSize.
-                    if (actualBlockGlobalX < -halfSize - boundaryTolerance || actualBlockGlobalX > halfSize + boundaryTolerance ||
-                        actualBlockGlobalY < -halfSize - boundaryTolerance || actualBlockGlobalY > halfSize + boundaryTolerance ||
-                        actualBlockGlobalZ < -halfSize - boundaryTolerance || actualBlockGlobalZ > halfSize + boundaryTolerance) {
+                    // Round to grid precision for comparison
+                    const precisionFactor = gameState.gridSize / 4; 
+                    const snappedX = Math.round(actualBlockGlobalX / precisionFactor) * precisionFactor;
+                    const snappedY = Math.round(actualBlockGlobalY / precisionFactor) * precisionFactor;
+                    const snappedZ = Math.round(actualBlockGlobalZ / precisionFactor) * precisionFactor;
+                    
+                    // Check if the snapped block is within the target cube boundaries with tolerance
+                    if (snappedX < -halfSize - boundaryTolerance || snappedX > halfSize + boundaryTolerance ||
+                        snappedY < -halfSize - boundaryTolerance || snappedY > halfSize + boundaryTolerance ||
+                        snappedZ < -halfSize - boundaryTolerance || snappedZ > halfSize + boundaryTolerance) {
                         
                         outOfBoundsPieces.add(piece);
                         foundError = true;
                         continue; // Do not return, continue checking other blocks
                     }
-
-                    // Convert scene coordinates to 0-indexed grid coordinates
-                    // Round to the nearest grid unit.
-                    const precisionFactor = gameState.gridSize / 4;
-                    const gridX = Math.round(actualBlockGlobalX / precisionFactor) * precisionFactor;
-                    const gridY = Math.round(actualBlockGlobalY / precisionFactor) * precisionFactor;
-                    const gridZ = Math.round(actualBlockGlobalZ / precisionFactor) * precisionFactor;
                     
-                    const posKey = `${gridX}_${gridY}_${gridZ}`;
-
-                    // Check if the grid position is valid (within 0 to targetSize-1 limits)
-                    if (gridX < -halfSize || gridX >= halfSize ||
-                        gridY < -halfSize || gridY >= halfSize ||
-                        gridZ < -halfSize || gridZ >= halfSize) {
-                        // This case also indicates out of bounds, even if it's an internal logic error
-                        outOfBoundsPieces.add(piece);
-                        foundError = true;
-                        continue; // Do not return, continue checking other blocks
-                    }
+                    const posKey = `${snappedX}_${snappedY}_${snappedZ}`;
 
                     if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) { // Position is already occupied, means an overlap
                         const existingBlock = occupiedGrid.get(posKey);
@@ -1122,7 +1115,13 @@
                         overlappingPieces.add(existingPiece);
                         foundError = true;
                         continue; // Do not return, continue checking other blocks
-                    } else {
+                    } else if (!occupiedGrid.has(posKey)) {
+                         // This means the snapped position is outside the pre-initialized grid, indicating out-of-bounds
+                        outOfBoundsPieces.add(piece);
+                        foundError = true;
+                        continue;
+                    }
+                    else {
                         occupiedGrid.set(posKey, block); // Mark as occupied by this block
                         currentBlockCount++;
                     }
@@ -1131,7 +1130,7 @@
 
             // After checking all pieces and blocks, report errors
             if (outOfBoundsPieces.size > 0) {
-                showError("One or more pieces are outside the grid cube!, or rotate the piece inside the cube and retry");
+                showError("One or more pieces are outside the grid cube, or rotate the piece inside the cube and retry!");
                 outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0))); // Red for out of bounds
             } else if (overlappingPieces.size > 0) {
                 showError("There are overlapping blocks!");
@@ -1201,7 +1200,8 @@
             } else if (isTooFar) {
                 showError("One or more pieces are too far from the cube!");
             } else {
-                nextLevel(); // Advance to the next level if all checks pass
+                // If no errors found, show the "Level completed!" message
+                document.getElementById('levelComplete').style.display = 'block';
             }
         }
 

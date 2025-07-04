@@ -423,17 +423,17 @@
                 gameState.targetCubeSize = 2; // Level 1 to 4: 2x2 grid
             } else if (level <= 15) { // Levels 5 to 12: 4x4 grid
                 gameState.targetCubeSize = 4;
-            } else if (level <= 25) { // Levels 13 to 20: 6x6 grid
+            } else if (level <= 35) { // Levels 35 to 20: 6x6 grid
                 gameState.targetCubeSize = 6;
-            } else if (level <= 35) { // Levels 30: 8x8 grid
+            } else if (level <= 55) { // Levels 55: 8x8 grid
                 gameState.targetCubeSize = 8;
-            } else if (level <= 45) { // Levels 40: 10x10 grid
+            } else if (level <= 75) { // Levels 75: 10x10 grid
                 gameState.targetCubeSize = 10;
-            } else { // Level 45 onwards: potentially larger grids for increased complexity
-                // For level 45, stick to 4x4 to 10x10, and for subsequent levels increase grid size
+            } else { // Level 80 onwards: potentially larger grids for increased complexity
+                // For level 80, stick to 4x4 to 10x10, and for subsequent levels increase grid size
                 gameState.targetCubeSize = Math.floor(Math.random() * 4) * 2 + 4; // e.g., Level 30: 8x8, Level 40: 10x10, etc.
                 
-                if(level > 59) { gameState.targetCubeSize =  gameState.targetCubeSize + 2}
+                if(level > 79) { gameState.targetCubeSize =  gameState.targetCubeSize + 2}
 
                 // Cap the grid size to prevent it from becoming too large
                 if (gameState.targetCubeSize > 12) gameState.targetCubeSize = 12;

@@ -404,9 +404,9 @@
             // Define a sequence of color modes
             // The 'normal' mode uses the COLORS array.
             // Other modes generate random shades within a color scale.
-            const colorModes = ['normal', 'grayscale', 'yellow', 'red', 'blue', 'green', 'purple', 'orange']; // Added purple and orange
+            const colorModes = ['normal', 'grayscale', 'yellow', 'red', 'blue', 'green', 'purple', 'orange', 'brown', 'black', 'white']; // Added purple and orange
             
-            if (level <= 20 || (level > 40 && level <= 60) || (level > 80 && level <= 100) ) {
+            if (level <= 15 || (level > 25 && level <= 35) || (level > 45 && level <= 55) || (level > 65 && level <= 75) || (level > 85 && level <= 95) ) {
                 levelColorMode = 'normal';
             } else {
                 // effectiveLevel starts at 0 for level 3, 1 for level 4, etc.

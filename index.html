@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Cubetris - Full Version with Solver</title>
+    <title>Cubetris - Full Version with Solver and Visual Effects</title>
     <style>
         html, body {
             overflow: hidden;
@@ -98,18 +98,18 @@
         }
         #errorMsg {
             position: absolute;
-            top: 20px; /* Adjusted position */
-            right: 20px; /* Adjusted position */
-            transform: none; /* Remove transform */
-            background-color: rgba(255,0,0,0.8); /* Slightly less transparent */
+            top: 20px;
+            right: 20px;
+            transform: none;
+            background-color: rgba(255,0,0,0.8);
             color: white;
             padding: 15px;
             border-radius: 8px;
             z-index: 100;
             display: none;
             text-align: center;
-            max-width: 300px; /* Limit width */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Add a subtle shadow */
+            max-width: 300px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         .control-row {
             display: flex;
@@ -117,7 +117,7 @@
             margin-bottom: 5px;
         }
         .control-row button {
-            width: calc(50% - 5px); /* Adjust width for 3 buttons per row */
+            width: calc(50% - 5px);
             margin: 0;
             padding: 8px;
             font-size: 14px;
@@ -125,80 +125,67 @@
         .large-btn {
             width: 100%;
         }
-        /* New button styles for scatter and check */
         .scatter-btn {
-            background-color: #4CAF50; /* Green */
+            background-color: #4CAF50;
         }
         .scatter-btn:hover {
             background-color: #45a049;
         }
         .check-btn {
-            background-color: #F44336; /* Red */
+            background-color: #F44336;
         }
         .check-btn:hover {
             background-color: #D32F2F;
         }
-        /* New button style for reset */
         .reset-btn {
-            background-color: #007bff; /* Blue */
+            background-color: #007bff;
         }
         .reset-btn:hover {
             background-color: #0056b3;
         }
-        /* New button style for "Its Ok for Me" */
         .ok-btn {
-            background-color: #FFC107; /* Yellow */
+            background-color: #FFC107;
         }
         .ok-btn:hover {
             background-color: #e0a800;
         }
-
-        /* Styles for on-screen D-pad and controls */
         #onScreenControls {
             position: absolute;
             bottom: 10px;
             right: 10px;
             z-index: 10;
             display: grid;
-            grid-template-columns: repeat(3, 120px); /* Duplicado de 60px */
-            grid-template-rows: repeat(3, 120px);   /* Duplicado de 60px */
-            gap: 10px;                              /* Duplicado de 5px */
+            grid-template-columns: repeat(3, 120px);
+            grid-template-rows: repeat(3, 120px);
+            gap: 10px;
             background-color: rgba(0,0,0,0.6);
-            padding: 20px;                          /* Duplicado de 10px */
+            padding: 20px;
             border-radius: 10px;
         }
-
         .dpad-btn {
             background-color: #333;
             color: white;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 36px; /* Duplicado de 18px */
+            font-size: 36px;
             border-radius: 8px;
             cursor: pointer;
             user-select: none;
             transition: background-color 0.2s;
         }
-
-        /* Specific positioning for D-pad like layout */
-        #changePieceBtn { grid-area: 1 / 1 / 1 / 1; background-color: #17b4b2; font-size: 28px;} /* Duplicado de 14px */
+        #changePieceBtn { grid-area: 1 / 1 / 1 / 1; background-color: #17b4b2; font-size: 28px;}
         #changePieceBtn:hover { background-color: #00e5ff; }
-
         #moveUp { grid-area: 1 / 2 / 2 / 3; }
         #moveLeft { grid-area: 2 / 1 / 3 / 2; }
         #moveRight { grid-area: 2 / 3 / 3 / 4; }
         #moveDown { grid-area: 3 / 2 / 4 / 3; }
-        #moveForward { grid-area: 1 / 3 / 2 / 4; font-size: 28px;} /* Duplicado de 14px */
-        #moveBackward { grid-area: 3 / 1 / 4 / 2; font-size: 28px;} /* Duplicado de 14px */
-
-        /* Additional controls */
-        #rotateBtn { grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; font-size: 28px;} /* Duplicado de 14px */
+        #moveForward { grid-area: 1 / 3 / 2 / 4; font-size: 28px;}
+        #moveBackward { grid-area: 3 / 1 / 4 / 2; font-size: 28px;}
+        #rotateBtn { grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; font-size: 28px;}
         #rotateBtn:hover { background-color: #F57C00; }
-
-        #fineTuneBtn { grid-area: 3 / 3 / 3 / 3; background-color: #d20f8a; font-size: 28px;} /* Duplicado de 14px */
+        #fineTuneBtn { grid-area: 3 / 3 / 3 / 3; background-color: #d20f8a; font-size: 28px;}
         #fineTuneBtn:hover { background-color: #ff0090; }
-        
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
@@ -261,10 +248,10 @@
             gridSize: 1.0,
             isScattered: false,
             animationFrame: null,
-            isFineTuneMode: false, // New: fine tune mode
-            lastClickTime: 0, // New: for double click detection
-            doubleClickThreshold: 300, // ms
-            referenceImageTakenForCurrentAssembly: false // New: Flag to track if screenshot taken for current assembly
+            isFineTuneMode: false,
+            lastClickTime: 0,
+            doubleClickThreshold: 300,
+            referenceImageTakenForCurrentAssembly: false
         };
 
         // Constants
@@ -281,6 +268,23 @@
             new BABYLON.Color3(0.8, 0.4, 0) // Brown
         ];
 
+        // Texture URLs
+        const TEXTURE_URLS = [
+            "https://www.babylonjs-playground.com/textures/icons/Play.png",
+            "https://www.babylonjs-playground.com/textures/lensdirt.jpg",
+            "https://www.babylonjs-playground.com/textures/mask.png",
+            "https://www.babylonjs-playground.com/textures/rockn.png",
+            "https://www.babylonjs-playground.com/textures/normal.png",
+            "https://www.babylonjs-playground.com/textures/flare.png",
+            "https://www.babylonjs-playground.com/textures/amiga.jpg",
+            "https://www.babylonjs-playground.com/textures/Dot.png"
+        ];
+
+        // HDRI Environment Textures for PBR
+        const HDRI_URLS = [
+            "https://assets.babylonjs.com/environments/environmentSpecular.dds"
+        ];
+
         // Scatter directions
         const SCATTER_DIRECTIONS = [
             new BABYLON.Vector3(1, 0, 0),   // Right
@@ -293,7 +297,7 @@
 
         // Emissive colors for selection
         const NORMAL_EMISSIVE_COLOR = new BABYLON.Color3(0.3, 0.3, 0.3);
-        const FINE_TUNE_EMISSIVE_COLOR = new BABYLON.Color3(0.5, 0.5, 0); // Yellow/Orange for fine tune
+        const FINE_TUNE_EMISSIVE_COLOR = new BABYLON.Color3(0.5, 0.5, 0);
 
         // Initialize the game
         function initGame() {
@@ -338,9 +342,8 @@
             gameState.camera.attachControl(gameState.canvas, true);
             gameState.camera.inputs.attached.keyboard.detachControl();
             
-            // Optional: Adjust camera feel
-            gameState.camera.inertia = 0.8; // default is 0.9, lower for snappier
-            gameState.camera.wheelPrecision = 50; // default is 3, higher for slower zoom
+            gameState.camera.inertia = 0.8;
+            gameState.camera.wheelPrecision = 50;
         }
 
         function setupLights() {
@@ -357,105 +360,20 @@
             gameState.scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.2, 1);
             gameState.scene.autoClear = true;
             gameState.scene.autoClearDepthAndStencil = true;
+            
+            // Setup environment for PBR materials
+            gameState.scene.environmentTexture = new BABYLON.CubeTexture.CreateFromPrefilteredData(
+                HDRI_URLS[0], 
+                gameState.scene
+            );
+            gameState.scene.environmentTexture.gammaSpace = false;
+            
+            // Enhance image processing for PBR
+            gameState.scene.imageProcessingConfiguration.contrast = 1.6;
+            gameState.scene.imageProcessingConfiguration.exposure = 1;
+            
             gameState.scene.postProcessRenderPipelineManager = new BABYLON.PostProcessRenderPipelineManager();
             gameState.scene.postProcessRenderPipelineManager.addPipeline(new BABYLON.OutlineRenderer(gameState.scene));
-        }
-
-        function setupUI() {
-            document.getElementById('btnScatter').addEventListener('click', scatterPieces);
-            document.getElementById('btnCheck').addEventListener('click', checkPuzzleComplete);
-            document.getElementById('btnReset').addEventListener('click', resetGame); // Event listener for new reset button
-            document.getElementById('btnItsOk').addEventListener('click', checkProximityAndOverlap); // New button for proximity and overlap
-            document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
-            document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
-            document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
-
-            // On-screen D-pad and action controls
-            document.getElementById('moveUp').addEventListener('click', () => moveSelectedPiece('up'));
-            document.getElementById('moveDown').addEventListener('click', () => moveSelectedPiece('down'));
-            document.getElementById('moveLeft').addEventListener('click', () => moveSelectedPiece('left'));
-            document.getElementById('moveRight').addEventListener('click', () => moveSelectedPiece('right'));
-            document.getElementById('moveForward').addEventListener('click', () => moveSelectedPiece('forward'));
-            document.getElementById('moveBackward').addEventListener('click', () => moveSelectedPiece('backward'));
-            document.getElementById('rotateBtn').addEventListener('click', rotateSelectedPiece);
-            document.getElementById('changePieceBtn').addEventListener('click', () => selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length));
-            document.getElementById('fineTuneBtn').addEventListener('click', toggleFineTuneMode);
-        }
-
-        function resetGame() {
-            gameState.currentLevel = 1;
-            startLevel(gameState.currentLevel);
-        }
-
-        function startLevel(level) {
-            // Clear scene correctly
-            while (gameState.scene.meshes.length > 0) {
-                gameState.scene.meshes[0].dispose();
-            }
-            
-            gameState.pieces = [];
-            gameState.selectedPieceIndex = 0;
-            gameState.isScattered = false;
-            gameState.isFineTuneMode = false; // Reset fine tune mode on level start
-            gameState.referenceImageTakenForCurrentAssembly = false; // Reset flag for new level
-
-            let levelColorMode = 'normal'; // default
-
-            // Define a sequence of color modes
-            // The 'normal' mode uses the COLORS array.
-            // Other modes generate random shades within a color scale.
-            const colorModes = ['normal', 'grayscale', 'black', 'white', 'yellow', 'red', 'blue', 'green', 'purple', 'orange', 'brown']; // Added purple and orange
-            
-            if (level <= 15 || (level > 25 && level <= 35) || (level > 45 && level <= 55) || (level > 65 && level <= 75) || (level > 85 && level <= 95) ) {
-                levelColorMode = 'normal';
-            } else {
-                // effectiveLevel starts at 0 for level 3, 1 for level 4, etc.
-                const effectiveLevel = level - 3; 
-                // modeIndex cycles from 1 to 7 (grayscale to orange)
-                // (colorModes.length - 1) is 7, so % 7 gives 0-6. Add 1 to get 1-7.
-                const modeIndex = (effectiveLevel % (colorModes.length - 1)) + 1; 
-                levelColorMode = colorModes[modeIndex];
-            }
-
-
-            // Logic to define targetCubeSize based on level
-            if (level <= 5) {
-                gameState.targetCubeSize = 2; // Level 1 to 4: 2x2 grid
-            } else if (level <= 15) { // Levels 5 to 12: 4x4 grid
-                gameState.targetCubeSize = 4;
-            } else if (level <= 35) { // Levels 35 to 20: 6x6 grid
-                gameState.targetCubeSize = 6;
-            } else if (level <= 55) { // Levels 55: 8x8 grid
-                gameState.targetCubeSize = 8;
-            } else if (level <= 75) { // Levels 75: 10x10 grid
-                gameState.targetCubeSize = 10;
-            } else { // Level 80 onwards: potentially larger grids for increased complexity
-                // For level 80, stick to 4x4 to 10x10, and for subsequent levels increase grid size
-                gameState.targetCubeSize = Math.floor(Math.random() * 4) * 2 + 4; // e.g., Level 30: 8x8, Level 40: 10x10, etc.
-                
-                if(level > 79) { gameState.targetCubeSize =  gameState.targetCubeSize + 2}
-
-                // Cap the grid size to prevent it from becoming too large
-                if (gameState.targetCubeSize > 12) gameState.targetCubeSize = 12;
-            }
-            
-            document.getElementById('levelDisplay').textContent = gameState.currentLevel;
-            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED'; // Update fine tune status
-            document.getElementById('levelComplete').style.display = 'none';
-            document.getElementById('solveBtn').disabled = false;
-
-            // Clear and hide reference image
-            const referenceImageContainer = document.getElementById('referenceImageContainer');
-            const referenceImage = document.getElementById('referenceImage');
-            referenceImage.src = '';
-            referenceImageContainer.style.display = 'none';
-            
-            createTargetCube();
-            createGrid();
-            createPiecesForLevel(level, levelColorMode); // Pass the flag
-            assemblePieces();
-            captureReferenceImage(); // Capture reference image right after assembling for the new level
-            selectPiece(0); // Select the first piece by default
         }
 
         function createTargetCube() {
@@ -476,15 +394,12 @@
             wireMat.emissiveColor = new BABYLON.Color3(0, 1, 0);
             wireMat.alpha = 0.3;
             wireframe.material = wireMat;
-            
-            
         }
 
         function createGrid() {
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             const lines = [];
             
-            // Main grid
             for (let x = -halfSize; x <= halfSize; x += gameState.gridSize) {
                 lines.push([new BABYLON.Vector3(x, -halfSize, -halfSize), new BABYLON.Vector3(x, -halfSize, halfSize)]);
                 lines.push([new BABYLON.Vector3(x, halfSize, -halfSize), new BABYLON.Vector3(x, halfSize, halfSize)]);
@@ -499,10 +414,9 @@
             grid.color = new BABYLON.Color3(0.5, 0.5, 0.5);
             grid.alpha = 0.5;
 
-            // Second reference grid (20x20)
             const secondGridSize = 20;
             const secondHalfSize = (secondGridSize * gameState.gridSize) / 2;
-            const offsetY = -(gameState.targetCubeSize * gameState.gridSize) / 2 - gameState.gridSize; // Position below the main grid
+            const offsetY = -(gameState.targetCubeSize * gameState.gridSize) / 2 - gameState.gridSize;
 
             const secondGridLines = [];
             for (let x = -secondHalfSize; x <= secondHalfSize; x += gameState.gridSize) {
@@ -514,11 +428,11 @@
             }
 
             const secondGrid = BABYLON.MeshBuilder.CreateLineSystem("secondGrid", {lines: secondGridLines}, gameState.scene);
-            secondGrid.color = new BABYLON.Color3(0.8, 0.2, 0.2); // Red color for the second grid
-            secondGrid.alpha = 0.2; // More transparent
+            secondGrid.color = new BABYLON.Color3(0.8, 0.2, 0.2);
+            secondGrid.alpha = 0.2;
         }
 
-        function createPieces(blockPositions, pieceIndex, levelColorMode) { // Changed parameter
+        function createPieces(blockPositions, pieceIndex, levelColorMode, textureUrl = null, materialType = 'normal') {
             const piece = {
                 blocks: [],
                 root: new BABYLON.TransformNode(`pieceRoot${pieceIndex}`, gameState.scene),
@@ -530,64 +444,140 @@
                 index: pieceIndex 
             };
             
-            // Calculate center of mass
             const center = new BABYLON.Vector3(0, 0, 0);
             blockPositions.forEach(pos => center.addInPlace(pos));
             center.scaleInPlace(1.0 / blockPositions.length);
             
-            let pieceColor;
-            // Generate a random value between 0.5 and 1.0 for dynamic color components
-            const randomComponent = 0.5 + Math.random() * 0.5; 
+            let normalMaterial;
+            let darkerMaterial;
 
-            switch (levelColorMode) {
-                case 'grayscale':
-                    const grayValue = 0.3 + Math.random() * 0.5; 
-                    pieceColor = new BABYLON.Color3(grayValue, grayValue, grayValue);
-                    break;
-                case 'yellow':
-                    // Yellow is Red + Green. Vary green component to get shades of yellow.
-                    pieceColor = new BABYLON.Color3(1, randomComponent, 0); 
-                    break;
-                case 'red':
-                    // Vary red component to get shades of red.
-                    pieceColor = new BABYLON.Color3(randomComponent, 0, 0); 
-                    break;
-                case 'blue':
-                    // Vary blue component to get shades of blue.
-                    pieceColor = new BABYLON.Color3(0, 0, randomComponent); 
-                    break;
-                case 'green':
-                    // Vary green component to get shades of green.
-                    pieceColor = new BABYLON.Color3(0, randomComponent, 0); 
-                    break;
-                case 'purple': // New case for purple
-                    const purpleValue = 0.5 + Math.random() * 0.5;
-                    pieceColor = new BABYLON.Color3(purpleValue, 0, purpleValue); 
-                    break;
-                case 'orange': // New case for orange
-                    const orangeGreenValue = 0.2 + Math.random() * 0.4; // Range from 0.2 to 0.6
-                    pieceColor = new BABYLON.Color3(1, orangeGreenValue, 0); 
-                    break;
-                case 'normal': 
-                default:
-                    // Use existing color logic for normal mode
-                    pieceColor = COLORS[pieceIndex % COLORS.length]; 
-                    break;
+            // Create materials based on the specified type
+            if (materialType !== 'normal') {
+                // PBR Materials for special effects
+                normalMaterial = new BABYLON.PBRMaterial(`normalPBRMat${pieceIndex}`, gameState.scene);
+                darkerMaterial = new BABYLON.PBRMaterial(`darkerPBRMat${pieceIndex}`, gameState.scene);
+                
+                // Common PBR settings
+                [normalMaterial, darkerMaterial].forEach(mat => {
+                    mat.environmentTexture = gameState.scene.environmentTexture;
+                    mat.useAmbientOcclusionFromMetallicTextureRed = true;
+                    mat.useRoughnessFromMetallicTextureGreen = true;
+                    mat.useMetallnessFromMetallicTextureBlue = true;
+                    mat.directIntensity = 1.5;
+                });
+
+                // Configure based on effect type
+                switch(materialType) {
+                    case 'metallic':
+                        // Gold metallic
+                        normalMaterial.albedoColor = new BABYLON.Color3(0.9, 0.8, 0.4);
+                        normalMaterial.metallic = 0.9;
+                        normalMaterial.roughness = 0.3;
+                        break;
+                        
+                    case 'glassy':
+                        // Glass/transparent effect
+                        normalMaterial.albedoColor = new BABYLON.Color3(0.8, 0.9, 1.0);
+                        normalMaterial.metallic = 0.0;
+                        normalMaterial.roughness = 0.0;
+                        normalMaterial.alpha = 0.7;
+                        normalMaterial.linkRefractionWithTransparency = true;
+                        normalMaterial.indexOfRefraction = 0.98;
+                        normalMaterial.transparencyMode = BABYLON.PBRMaterial.PBRTRANSPARENCYMODE_ALPHABLEND;
+                        break;
+                        
+                    case 'brightMetallic':
+                        // Shiny silver
+                        normalMaterial.albedoColor = new BABYLON.Color3(0.95, 0.95, 0.99);
+                        normalMaterial.metallic = 1.0;
+                        normalMaterial.roughness = 0.1;
+                        break;
+                        
+                    case 'texturedMetallic':
+                        // Textured metal
+                        if (textureUrl) {
+                            normalMaterial.albedoTexture = new BABYLON.Texture(textureUrl, gameState.scene);
+                            normalMaterial.metallicTexture = normalMaterial.albedoTexture;
+                        } else {
+                            // Copper fallback
+                            normalMaterial.albedoColor = new BABYLON.Color3(0.7, 0.4, 0.2);
+                        }
+                        normalMaterial.metallic = 0.9;
+                        normalMaterial.roughness = 0.4;
+                        break;
+                }
+
+                // Configure darker material
+                darkerMaterial.albedoColor = normalMaterial.albedoColor.scale(0.6);
+                darkerMaterial.metallic = normalMaterial.metallic;
+                darkerMaterial.roughness = normalMaterial.roughness + 0.2;
+                
+            } else {
+                // Standard material (original behavior)
+                if (textureUrl) {
+                    normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
+                    normalMaterial.diffuseTexture = new BABYLON.Texture(textureUrl, gameState.scene);
+                    normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                    normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                    normalMaterial.diffuseTexture.uScale = 2;
+                    normalMaterial.diffuseTexture.vScale = 2;
+
+                    darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
+                    darkerMaterial.diffuseTexture = new BABYLON.Texture(textureUrl, gameState.scene);
+                    darkerMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6);
+                    darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                    darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                    darkerMaterial.diffuseTexture.uScale = 2;
+                    darkerMaterial.diffuseTexture.vScale = 2;
+                } else {
+                    // Existing color logic for normal mode or other color modes
+                    let pieceColor;
+                    const randomComponent = 0.5 + Math.random() * 0.5;
+
+                    switch (levelColorMode) {
+                        case 'grayscale':
+                            const grayValue = 0.3 + Math.random() * 0.5; 
+                            pieceColor = new BABYLON.Color3(grayValue, grayValue, grayValue);
+                            break;
+                        case 'yellow':
+                            pieceColor = new BABYLON.Color3(1, randomComponent, 0); 
+                            break;
+                        case 'red':
+                            pieceColor = new BABYLON.Color3(randomComponent, 0, 0); 
+                            break;
+                        case 'blue':
+                            pieceColor = new BABYLON.Color3(0, 0, randomComponent); 
+                            break;
+                        case 'green':
+                            pieceColor = new BABYLON.Color3(0, randomComponent, 0); 
+                            break;
+                        case 'purple':
+                            const purpleValue = 0.5 + Math.random() * 0.5;
+                            pieceColor = new BABYLON.Color3(purpleValue, 0, purpleValue); 
+                            break;
+                        case 'orange':
+                            const orangeGreenValue = 0.2 + Math.random() * 0.4;
+                            pieceColor = new BABYLON.Color3(1, orangeGreenValue, 0); 
+                            break;
+                        case 'normal': 
+                        default:
+                            pieceColor = COLORS[pieceIndex % COLORS.length]; 
+                            break;
+                    }
+
+                    normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
+                    normalMaterial.diffuseColor = pieceColor;
+                    normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                    normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+
+                    const darkerColor = pieceColor.scale(0.6);
+                    darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
+                    darkerMaterial.diffuseColor = darkerColor;
+                    darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                    darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                }
             }
 
-            // Define two materials for each piece: normal and darker for outer blocks
-            const normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
-            normalMaterial.diffuseColor = pieceColor;
-            normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-            normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-
-            const darkerColor = pieceColor.scale(0.6); // Make it 40% darker
-            const darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
-            darkerMaterial.diffuseColor = darkerColor;
-            darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-            darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-
-            // Store the assembled position of the piece itself
             const pieceAssembledGlobalPosition = new BABYLON.Vector3(
                 center.x * gameState.gridSize,
                 center.y * gameState.gridSize,
@@ -615,7 +605,6 @@
                 const halfTargetSize = gameState.targetCubeSize / 2;
 
                 let isOuterBlock = false;
-                // Check if the block is on the boundary in any dimension
                 if (Math.abs(absoluteBlockX) === halfTargetSize - 0.5 ||
                     Math.abs(absoluteBlockY) === halfTargetSize - 0.5 ||
                     Math.abs(absoluteBlockZ) === halfTargetSize - 0.5) {
@@ -630,24 +619,31 @@
                 piece.blocks.push(block);
             });
             
-            // Save assembled position
             piece.assembledPosition = pieceAssembledGlobalPosition;
             
             gameState.pieces.push(piece);
             return piece;
         }
 
-        function createPiecesForLevel(level, levelColorMode) { // Changed parameter
+        function createPiecesForLevelInternal(level, levelColorMode, textureToUse) {
             let numPieces;
             if (level === 14) {
-                numPieces = 8; // Limit to 8 pieces for level 14
+                numPieces = 8;
             } else if (level < 14) {
                 numPieces = 4 + Math.floor(level / 2);
                 if (numPieces > 10) numPieces = 10;
-            } else { // For levels greater than 14, increase complexity
-                // For example, increase number of pieces but keep it reasonable
+            } else {
                 numPieces = 8 + Math.floor((level - 14) / 2);
-                if (numPieces > 12) numPieces = 12; // Cap max pieces at 12 for extreme levels
+                if (numPieces > 12) numPieces = 12;
+            }
+            
+            // Determine material effect based on level
+            let materialEffect = 'normal';
+            const effectTypes = ['metallic', 'glassy', 'brightMetallic', 'texturedMetallic'];
+            
+            if (level % 2 === 0 && level > 1) {
+                const effectIndex = (Math.floor((level / 2) - 1) % effectTypes.length);
+                materialEffect = effectTypes[effectIndex];
             }
             
             const allBlocks = [];
@@ -663,18 +659,15 @@
             }
             
             // Divide into pieces ensuring adjacency
-            // Adjust blocksPerPiece logic for higher levels to potentially create more varied shapes
             let blocksPerPiece = Math.floor(allBlocks.length / numPieces);
-            // For higher levels, increase variance in blocksPerPiece to create more complex shapes
             if (level > 14) {
-                const minBlocks = Math.max(3, Math.floor(blocksPerPiece * 0.7)); // Ensure pieces aren't too small
-                const maxBlocks = Math.min(allBlocks.length, Math.ceil(blocksPerPiece * 1.3)); // Ensure pieces aren't too big
+                const minBlocks = Math.max(3, Math.floor(blocksPerPiece * 0.7));
+                const maxBlocks = Math.min(allBlocks.length, Math.ceil(blocksPerPiece * 1.3));
                 blocksPerPiece = Math.floor(Math.random() * (maxBlocks - minBlocks + 1)) + minBlocks;
             }
 
             for (let i = 0; i < numPieces; i++) {
                 const pieceBlocks = [];
-                // Distribute remaining blocks if it's the last piece
                 const blocksToTake = (i === numPieces - 1) ? allBlocks.length : blocksPerPiece;
                 
                 if (allBlocks.length > 0) {
@@ -709,7 +702,7 @@
                     }
                 }
                 
-                createPieces(pieceBlocks, i, levelColorMode); // Pass levelColorMode
+                createPieces(pieceBlocks, i, levelColorMode, textureToUse, materialEffect);
             }
         }
 
@@ -736,12 +729,11 @@
 
         function captureReferenceImage() {
             if (!gameState.referenceImageTakenForCurrentAssembly) {
-                // Ocultar elementos específicos de la UI que no queremos en la captura
                 const gameInfo = document.getElementById('gameInfo');
                 const controls = document.getElementById('controls');
                 const levelComplete = document.getElementById('levelComplete');
                 const errorMsg = document.getElementById('errorMsg');
-                const onScreenControls = document.getElementById('onScreenControls'); // Hide on-screen controls too
+                const onScreenControls = document.getElementById('onScreenControls');
 
                 if (gameInfo) gameInfo.style.display = 'none';
                 if (controls) controls.style.display = 'none';
@@ -749,8 +741,6 @@
                 if (errorMsg) errorMsg.style.display = 'none';
                 if (onScreenControls) onScreenControls.style.display = 'none';
 
-
-                // Add a small delay to ensure the scene has rendered the assembled state
                 setTimeout(() => {
                     BABYLON.ScreenshotTools.CreateScreenshot(gameState.engine, gameState.camera, { width: 512, height: 512, precision: 1 }, (data) => {
                         const referenceImage = document.getElementById('referenceImage');
@@ -758,18 +748,15 @@
                         referenceImage.src = data;
                         referenceImageContainer.style.display = 'block';
 
-                        // Restaurar la visibilidad de los elementos de la UI
                         if (gameInfo) gameInfo.style.display = 'block';
                         if (controls) controls.style.display = 'block';
-                        if (onScreenControls) onScreenControls.style.display = 'grid'; // Restore on-screen controls
-                        // levelComplete y errorMsg se manejan por otra lógica, no se restauran aquí.
+                        if (onScreenControls) onScreenControls.style.display = 'grid';
 
-                        gameState.referenceImageTakenForCurrentAssembly = true; // Mark as captured
+                        gameState.referenceImageTakenForCurrentAssembly = true;
                     });
-                }, 50); // A small delay (e.g., 50ms) to allow rendering
+                }, 50);
             }
         }
-
 
         function scatterPieces() {
             if (gameState.isScattered || gameState.isAnimating) return;
@@ -777,10 +764,7 @@
             const minDistance = gameState.targetCubeSize * gameState.gridSize * 1.5;
             const maxDistance = gameState.targetCubeSize * gameState.gridSize * 2.5;
             
-            // Use all possible directions
             const directions = [...SCATTER_DIRECTIONS];
-            
-            // Assign unique direction to each piece
             const usedDirections = new Set();
             
             gameState.pieces.forEach((piece, index) => {
@@ -788,7 +772,6 @@
                 let attempts = 0;
                 const maxAttempts = 20;
                 
-                // Search for unused direction
                 do {
                     const dirIndex = Math.floor(Math.random() * directions.length);
                     direction = directions[dirIndex];
@@ -802,7 +785,6 @@
                 
                 usedDirections.add(direction.toString());
                 
-                // Calculate distance as exact multiple
                 const distanceMultiplier = Math.floor(minDistance/gameState.gridSize) + 
                                          Math.floor(Math.random() * ((maxDistance-minDistance)/gameState.gridSize));
                 const distance = distanceMultiplier * gameState.gridSize;
@@ -816,7 +798,6 @@
                 piece.position = newPosition;
                 piece.root.position = piece.position.clone();
                 
-                // Random rotation (90° increments)
                 piece.rotation = Math.floor(Math.random() * 4) * Math.PI / 2;
                 piece.root.rotation.y = piece.rotation;
                 
@@ -841,45 +822,40 @@
         function selectPiece(index, isDoubleClick = false) {
             if (gameState.isAnimating || index < 0 || index >= gameState.pieces.length) return;
             
-            // Deselect current
             if (gameState.pieces[gameState.selectedPieceIndex]) {
                 gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
-                    block.renderOutline = false; // Disable outline for previously selected
-                    block.outlineColor = BABYLON.Color3.Black(); // Reset to default
-                    block.outlineWidth = 0; // Reset to default
-                    block.material.emissiveColor = new BABYLON.Color3(0, 0, 0); // Reset emissive
+                    block.renderOutline = false;
+                    block.outlineColor = BABYLON.Color3.Black();
+                    block.outlineWidth = 0;
+                    block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
                 });
             }
-            
-            // If the selected piece is the same and it was a double click, toggle fine tune
+
             if (index === gameState.selectedPieceIndex && isDoubleClick) {
                 gameState.isFineTuneMode = !gameState.isFineTuneMode;
             } else {
-                // If it's a new selection or a single click, disable fine tune
                 gameState.isFineTuneMode = false;
             }
 
-            // Select new piece
             gameState.selectedPieceIndex = index;
             const selectedPiece = gameState.pieces[gameState.selectedPieceIndex];
             
             const emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
-            const outlineColor = gameState.isFineTuneMode ? new BABYLON.Color3(1, 1, 0) : new BABYLON.Color3(0, 1, 1); // Yellow for fine-tune, Cyan otherwise
-            const outlineWidth = gameState.isFineTuneMode ? 0.02 : 0.01; // Thicker for fine-tune
+            const outlineColor = gameState.isFineTuneMode ? new BABYLON.Color3(1, 1, 0) : new BABYLON.Color3(0, 1, 1);
+            const outlineWidth = gameState.isFineTuneMode ? 0.02 : 0.01;
 
             selectedPiece.blocks.forEach(block => {
                 block.material.emissiveColor = emissiveColor;
-                block.renderOutline = true; // Enable outline
+                block.renderOutline = true;
                 block.outlineColor = outlineColor;
                 block.outlineWidth = outlineWidth;
             });
 
-            // Update UI for fine-tune mode
             document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED';
         }
 
         function toggleFineTuneMode() {
-            if (gameState.pieces.length === 0) return; // No pieces to select
+            if (gameState.pieces.length === 0) return;
 
             gameState.isFineTuneMode = !gameState.isFineTuneMode;
             const selectedPiece = gameState.pieces[gameState.selectedPieceIndex];
@@ -894,9 +870,8 @@
                     block.outlineWidth = outlineWidth;
                 });
             }
-            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED'; // Update UI
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED';
         }
-
 
         function moveSelectedPiece(direction) {
             if (gameState.isAnimating || !gameState.isScattered) return;
@@ -905,8 +880,7 @@
             const newPosition = piece.position.clone();
             const halfSize = (gameState.targetCubeSize * gameState.gridSize) / 2;
             
-            // Determine displacement amount
-            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 16 : gameState.gridSize / 2; // Changed to /16 for higher precision
+            const displacement = gameState.isFineTuneMode ? gameState.gridSize / 16 : gameState.gridSize / 2;
 
             switch (direction) {
                 case 'up': 
@@ -947,20 +921,17 @@
         function checkCollision(piece, newPosition) {
             const pieceBlocksPositions = new Set();
             
-            // Calculate new global positions
             piece.blocks.forEach(block => {
                 const globalPos = new BABYLON.Vector3(
                     newPosition.x + block.position.x,
                     newPosition.y + block.position.y,
                     newPosition.z + block.position.z
                 );
-                // Round to grid precision for collision comparisons (now to 1/4 of unit)
                 const precisionFactor = gameState.gridSize / 4;
                 const posKey = `${Math.round(globalPos.x / precisionFactor) * precisionFactor}_${Math.round(globalPos.y / precisionFactor) * precisionFactor}_${Math.round(globalPos.z / precisionFactor) * precisionFactor}`;
                 pieceBlocksPositions.add(posKey);
             });
             
-            // Check against other pieces
             for (let i = 0; i < gameState.pieces.length; i++) {
                 if (i === gameState.selectedPieceIndex) continue;
                 
@@ -968,7 +939,6 @@
                 for (let j = 0; j < otherPiece.blocks.length; j++) {
                     const otherBlock = otherPiece.blocks[j];
                     const otherGlobalPos = otherBlock.getAbsolutePosition();
-                    // Round to grid precision for collision comparisons (now to 1/4 of unit)
                     const precisionFactor = gameState.gridSize / 4;
                     const otherPosKey = `${Math.round(otherGlobalPos.x / precisionFactor) * precisionFactor}_${Math.round(otherGlobalPos.y / precisionFactor) * precisionFactor}_${Math.round(otherGlobalPos.z / precisionFactor) * precisionFactor}`;
                     
@@ -980,7 +950,6 @@
             
             return false;
         }
-
 
         function rotateSelectedPiece() {
             if (gameState.isAnimating || !gameState.isScattered) return;
@@ -1063,29 +1032,22 @@
                 return;
             }
             
-            // Disable controls during solving
             gameState.isAnimating = true;
             
-            
-            // Solve piece by piece with a delay between them
             let currentPieceIndex = 0;
             const solveNextPiece = () => {
                 if (currentPieceIndex >= gameState.pieces.length) {
-                    // Solution completed
                     gameState.isAnimating = false;
-                    // document.getElementById('solveBtnOnScreen').disabled = false; // This button ID doesn't exist in the current HTML
-                    checkPuzzleComplete(); // Show completion message
+                    checkPuzzleComplete();
                     return;
                 }
                 
                 const piece = gameState.pieces[currentPieceIndex];
-                selectPiece(currentPieceIndex); // Select the piece for animation
+                selectPiece(currentPieceIndex);
                 
-                // Movement animation
-                const moveDuration = 1000; // 1 second per movement
-                const rotateDuration = 800; // 0.8 seconds per rotation
+                const moveDuration = 1000;
+                const rotateDuration = 800;
                 
-                // Step 1: Rotate if necessary
                 const rotationSteps = Math.round((piece.assembledRotation - piece.rotation) / (Math.PI/2));
                 let rotationCount = 0;
                 
@@ -1098,16 +1060,14 @@
                         updateBlockPositions(piece);
                         animateRotation(piece, piece.rotation - (Math.PI/2) * Math.sign(rotationSteps), rotateDuration, () => {
                             rotationCount++;
-                            setTimeout(rotateStep, 200); // Small pause between rotations
+                            setTimeout(rotateStep, 200);
                         });
                     } else {
-                        // Step 2: Move to correct position
                         const startPosition = piece.position.clone();
                         const endPosition = piece.assembledPosition.clone();
                         
                         piece.position = endPosition;
                         animatePieceToPosition(piece, moveDuration, () => {
-                            // Wait a bit before moving to the next piece
                             setTimeout(() => {
                                 currentPieceIndex++;
                                 solveNextPiece();
@@ -1119,7 +1079,6 @@
                 if (rotationSteps !== 0) {
                     rotateStep();
                 } else {
-                    // Move directly if no rotation needed
                     const startPosition = piece.position.clone();
                     const endPosition = piece.assembledPosition.clone();
                     
@@ -1137,96 +1096,86 @@
         }
 
         function checkPuzzleComplete() {
-            if (!gameState.isScattered) return; // Only check if pieces are scattered and being assembled
+            if (!gameState.isScattered) return;
 
             const targetSize = gameState.targetCubeSize;
-            const halfSize = (targetSize * gameState.gridSize) / 2; // Actual size in scene units
-            const boundaryTolerance = 0.25 * gameState.gridSize; // Tolerance increased to 1/4 of a grid unit
+            const halfSize = (targetSize * gameState.gridSize) / 2;
+            const boundaryTolerance = 0.25 * gameState.gridSize;
 
-            // Arrays to track pieces with errors
             const outOfBoundsPieces = new Set();
             const overlappingPieces = new Set();
             
-            // Create a 3D grid to track occupied positions within the target cube
-            const occupiedGrid = new Map(); // Key: "x_y_z", Value: BABYLON.Mesh | null (block if occupied, null if empty)
+            const occupiedGrid = new Map();
 
-            // Initialize the grid with null values
             for (let i = 0; i < targetSize; i++) {
                 for (let j = 0; j < targetSize; j++) {
                     for (let k = 0; k < targetSize; k++) {
-                        // Convert grid indices to scene coordinates to initialize the map correctly
                         const gridX = (i - targetSize / 2 + 0.5) * gameState.gridSize;
                         const gridY = (j - targetSize / 2 + 0.5) * gameState.gridSize;
                         const gridZ = (k - targetSize / 2 + 0.5) * gameState.gridSize;
                         const posKey = `${gridX}_${gridY}_${gridZ}`;
-                        occupiedGrid.set(posKey, null); // Initialize as empty
+                        occupiedGrid.set(posKey, null);
                     }
                 }
             }
             
             const expectedTotalBlocks = targetSize * targetSize * targetSize;
             let currentBlockCount = 0;
-            let foundError = false; // Flag to know if any type of error was found
+            let foundError = false;
 
-            // Iterate through all pieces and their blocks to populate the occupied grid
             for (const piece of gameState.pieces) {
                 for (const block of piece.blocks) {
-                    const rotatedBlockLocalPos = block.position; 
+                    const rotatedBlockLocalPos = block.position;
 
                     const actualBlockGlobalX = piece.position.x + rotatedBlockLocalPos.x;
                     const actualBlockGlobalY = piece.position.y + rotatedBlockLocalPos.y;
                     const actualBlockGlobalZ = piece.position.z + rotatedBlockLocalPos.z;
 
-                    // Round to grid precision for comparison
-                    const precisionFactor = gameState.gridSize / 4; 
+                    const precisionFactor = gameState.gridSize / 4;
                     const snappedX = Math.round(actualBlockGlobalX / precisionFactor) * precisionFactor;
                     const snappedY = Math.round(actualBlockGlobalY / precisionFactor) * precisionFactor;
                     const snappedZ = Math.round(actualBlockGlobalZ / precisionFactor) * precisionFactor;
                     
-                    // Check if the snapped block is within the target cube boundaries with tolerance
                     if (snappedX < -halfSize - boundaryTolerance || snappedX > halfSize + boundaryTolerance ||
                         snappedY < -halfSize - boundaryTolerance || snappedY > halfSize + boundaryTolerance ||
                         snappedZ < -halfSize - boundaryTolerance || snappedZ > halfSize + boundaryTolerance) {
                         
                         outOfBoundsPieces.add(piece);
                         foundError = true;
-                        continue; // Do not return, continue checking other blocks
+                        continue;
                     }
                     
                     const posKey = `${snappedX}_${snappedY}_${snappedZ}`;
 
-                    if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) { // Position is already occupied, means an overlap
+                    if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) {
                         const existingBlock = occupiedGrid.get(posKey);
                         const existingPiece = gameState.pieces[existingBlock.pieceIndex];
                         
                         overlappingPieces.add(piece);
                         overlappingPieces.add(existingPiece);
                         foundError = true;
-                        continue; // Do not return, continue checking other blocks
+                        continue;
                     } else if (!occupiedGrid.has(posKey)) {
-                         // This means the snapped position is outside the pre-initialized grid, indicating out-of-bounds
                         outOfBoundsPieces.add(piece);
                         foundError = true;
                         continue;
                     }
                     else {
-                        occupiedGrid.set(posKey, block); // Mark as occupied by this block
+                        occupiedGrid.set(posKey, block);
                         currentBlockCount++;
                     }
                 }
             }
 
-            // After checking all pieces and blocks, report errors
             if (outOfBoundsPieces.size > 0) {
                 showError("One or more pieces are outside the grid cube, or rotate the piece inside the cube and retry!");
-                outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0))); // Red for out of bounds
+                outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0)));
             } else if (overlappingPieces.size > 0) {
                 showError("There are overlapping blocks!");
-                overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0.5, 0))); // Orange for overlap
+                overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0.5, 0)));
             } else if (currentBlockCount !== expectedTotalBlocks) {
                 showError("The cube is not correctly assembled. Blocks are missing or misplaced.");
             } else {
-                // If no errors found and block count is correct
                 document.getElementById('levelComplete').style.display = 'block';
             }
         }
@@ -1239,33 +1188,29 @@
 
             const targetSize = gameState.targetCubeSize;
             const halfSize = (targetSize * gameState.gridSize) / 2;
-            const proximityThreshold = gameState.gridSize; // "Less than one cube length"
+            const proximityThreshold = gameState.gridSize;
 
             let hasOverlap = false;
             let isTooFar = false;
 
-            const occupiedGrid = new Map(); // To detect overlaps
+            const occupiedGrid = new Map();
 
-            // Iterate through all pieces and their blocks
             for (const piece of gameState.pieces) {
                 for (const block of piece.blocks) {
-                    const rotatedBlockLocalPos = block.position; 
+                    const rotatedBlockLocalPos = block.position;
 
                     const actualBlockGlobalX = piece.position.x + rotatedBlockLocalPos.x;
                     const actualBlockGlobalY = piece.position.y + rotatedBlockLocalPos.y;
                     const actualBlockGlobalZ = piece.position.z + rotatedBlockLocalPos.z;
 
-                    // Proximity Check
                     if (actualBlockGlobalX < -halfSize - proximityThreshold || actualBlockGlobalX > halfSize + proximityThreshold ||
                         actualBlockGlobalY < -halfSize - proximityThreshold || actualBlockGlobalY > halfSize + proximityThreshold ||
                         actualBlockGlobalZ < -halfSize - proximityThreshold || actualBlockGlobalZ > halfSize + proximityThreshold) {
                         isTooFar = true;
-                        highlightPiece(piece, new BABYLON.Color3(1, 0.5, 0)); // Orange for "too far"
-                        // Continue to check for other errors on this block/piece
+                        highlightPiece(piece, new BABYLON.Color3(1, 0.5, 0));
                     }
 
-                    // Overlap Check (using a coarser grid for overlap, consistent with movement/collision)
-                    const precisionFactor = gameState.gridSize / 4; // Use same precision as checkCollision
+                    const precisionFactor = gameState.gridSize / 4;
                     const gridX = Math.round(actualBlockGlobalX / precisionFactor) * precisionFactor;
                     const gridY = Math.round(actualBlockGlobalY / precisionFactor) * precisionFactor;
                     const gridZ = Math.round(actualBlockGlobalZ / precisionFactor) * precisionFactor;
@@ -1274,7 +1219,7 @@
 
                     if (occupiedGrid.has(posKey) && occupiedGrid.get(posKey) !== null) {
                         hasOverlap = true;
-                        highlightPiece(piece, new BABYLON.Color3(1, 0, 0)); // Red for "overlapping"
+                        highlightPiece(piece, new BABYLON.Color3(1, 0, 0));
                         const existingPiece = gameState.pieces[occupiedGrid.get(posKey).pieceIndex];
                         highlightPiece(existingPiece, new BABYLON.Color3(1, 0, 0));
                     } else {
@@ -1288,19 +1233,15 @@
             } else if (isTooFar) {
                 showError("One or more pieces are too far from the cube!");
             } else {
-                // If no errors found, show the "Level completed!" message
                 document.getElementById('levelComplete').style.display = 'block';
             }
         }
 
-
-        // Helper function to highlight a piece
         function highlightPiece(pieceToHighlight, color, duration = 500) {
             const originalEmissiveColors = pieceToHighlight.blocks.map(b => b.material.emissiveColor.clone());
             pieceToHighlight.blocks.forEach(b => b.material.emissiveColor = color);
             setTimeout(() => {
                 pieceToHighlight.blocks.forEach((b, i) => {
-                    // Restore original emissive color, considering if it's the currently selected piece
                     if (pieceToHighlight.index === gameState.selectedPieceIndex) {
                         b.material.emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
                     } else {
@@ -1326,24 +1267,94 @@
         }
 
         function resetCamera() {
-            // Reset camera to its initial state
             gameState.camera.alpha = -Math.PI / 2;
             gameState.camera.beta = Math.PI / 3;
             gameState.camera.radius = 20;
             gameState.camera.setTarget(BABYLON.Vector3.Zero());
         }
 
+        function resetGame() {
+            gameState.currentLevel = 1;
+            startLevel(gameState.currentLevel);
+        }
+
+        function startLevel(level) {
+            while (gameState.scene.meshes.length > 0) {
+                gameState.scene.meshes[0].dispose();
+            }
+            
+            gameState.pieces = [];
+            gameState.selectedPieceIndex = 0;
+            gameState.isScattered = false;
+            gameState.isFineTuneMode = false;
+            gameState.referenceImageTakenForCurrentAssembly = false;
+
+            let levelColorMode = 'normal';
+            let textureToUse = null;
+
+            const colorModes = ['normal', 'grayscale', 'black', 'white', 'yellow', 'red', 'blue', 'green', 'purple', 'orange', 'brown'];
+            
+            if (level <= 15 || (level > 25 && level <= 35) || (level > 45 && level <= 55) || (level > 65 && level <= 75) || (level > 85 && level <= 95) ) {
+                levelColorMode = 'normal';
+                if (level % 7 === 0){
+                    const textureIndex = Math.floor(((level - 1) / 5)) % TEXTURE_URLS.length;
+                    textureToUse = TEXTURE_URLS[textureIndex];
+                }
+            } else {
+                if (level <= 2) {
+                    levelColorMode = 'normal';
+                } else {
+                    const effectiveLevel = level - 3; 
+                    const modeIndex = (effectiveLevel % (colorModes.length - 1)) + 1; 
+                    levelColorMode = colorModes[modeIndex];
+                }
+            }
+
+            if (level <= 5) {
+                gameState.targetCubeSize = 2;
+            } else if (level <= 15) {
+                gameState.targetCubeSize = 4;
+            } else if (level <= 35) {
+                gameState.targetCubeSize = 6;
+            } else if (level <= 55) {
+                gameState.targetCubeSize = 8;
+            } else if (level <= 75) {
+                gameState.targetCubeSize = 10;
+            } else {
+                gameState.targetCubeSize = Math.floor(Math.random() * 4) * 2 + 4;
+                
+                if(level > 79) { gameState.targetCubeSize =  gameState.targetCubeSize + 2}
+
+                if (gameState.targetCubeSize > 12) gameState.targetCubeSize = 12;
+            }
+            
+            document.getElementById('levelDisplay').textContent = gameState.currentLevel;
+            document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED';
+            document.getElementById('levelComplete').style.display = 'none';
+            document.getElementById('solveBtn').disabled = false;
+
+            const referenceImageContainer = document.getElementById('referenceImageContainer');
+            const referenceImage = document.getElementById('referenceImage');
+            referenceImage.src = '';
+            referenceImageContainer.style.display = 'none';
+            
+            createTargetCube();
+            createGrid();
+            createPiecesForLevelInternal(level, levelColorMode, textureToUse);
+            assemblePieces();
+            captureReferenceImage();
+            selectPiece(0);
+        }
+
         function setupControls() {
             const keyMap = {
-                'p': 'scatter',      // Scatter activate with P key
-                'w': 'up',           // W for Up
-                's': 'down',         // S for Down
-                'a': 'right',        // A for Right
-                'e': 'backward',     // E for Backward
-
-                // Retained/unaffected assignments
-                'd': 'left',         // 'D' (left) is unaffected by the changes, 'p' takes over scatter
-                'q': 'forward',      // 'Q' (forward) is unaffected by the changes
+                'p': 'scatter',
+                'w': 'up',
+                's': 'down',
+                'a': 'right',
+                'e': 'backward',
+                'd': 'left',
+                'q': 'forward',
                 'r': 'rotate',
                 ' ': 'change',
                 'm': 'toggleFineTune',
@@ -1361,7 +1372,7 @@
                     scatterPieces();
                 } else if (action === 'check') {
                     checkPuzzleComplete();
-                } else if (action === 'okForMe') { // Handle new keybind
+                } else if (action === 'okForMe') {
                     checkProximityAndOverlap();
                 } else {
                     switch (action) {
@@ -1399,38 +1410,49 @@
                     const clickedPieceIndex = pickResult.pickedMesh.pieceIndex;
 
                     if (deltaTime < gameState.doubleClickThreshold && clickedPieceIndex === gameState.selectedPieceIndex) {
-                        // It's a double click on the already selected piece, toggle fine tune
                         selectPiece(clickedPieceIndex, true); 
                     } else if (clickedPieceIndex !== gameState.selectedPieceIndex) {
-                        // Click on a new piece, disable fine tune and select the new one
                         selectPiece(clickedPieceIndex, false); 
                     } else {
-                        // Single click on the already selected piece, do nothing unless you want to deselect
-                        // or have a different behavior. For now, if already selected and not double click, it doesn't change selection
-                        // but it could disable fine tune mode if it was active and not double clicked
                         if (gameState.isFineTuneMode) {
-                            selectPiece(clickedPieceIndex, false); // Disable fine tune
+                            selectPiece(clickedPieceIndex, false);
                         }
                     }
                 } else {
-                    // Click on the background or a non-pickable mesh, deselect and disable fine tune
                     if (gameState.pieces[gameState.selectedPieceIndex]) {
                         gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
-                            block.renderOutline = false; // Disable outline for previously selected
-                            block.outlineColor = BABYLON.Color3.Black(); // Reset to default
-                            block.outlineWidth = 0; // Reset to default
-                            block.material.emissiveColor = new BABYLON.Color3(0, 0, 0); // Reset emissive
+                            block.renderOutline = false;
+                            block.outlineColor = BABYLON.Color3.Black();
+                            block.outlineWidth = 0;
+                            block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
                         });
                     }
                     gameState.isFineTuneMode = false;
-                    document.getElementById('fineTuneStatus').textContent = 'DEACTIVATED'; // Update UI
-                    // No piece selected, or you can choose to keep the last selected index but not highlighted.
-                    // For this game, deselection is not defined, so we will keep the last selected index
-                    // but visually not highlighted.
+                    document.getElementById('fineTuneStatus').textContent = 'DEACTIVATED';
                 }
 
                 gameState.lastClickTime = currentTime;
             });
+        }
+
+        function setupUI() {
+            document.getElementById('btnScatter').addEventListener('click', scatterPieces);
+            document.getElementById('btnCheck').addEventListener('click', checkPuzzleComplete);
+            document.getElementById('btnReset').addEventListener('click', resetGame);
+            document.getElementById('btnItsOk').addEventListener('click', checkProximityAndOverlap);
+            document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+            document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
+            document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
+
+            document.getElementById('moveUp').addEventListener('click', () => moveSelectedPiece('up'));
+            document.getElementById('moveDown').addEventListener('click', () => moveSelectedPiece('down'));
+            document.getElementById('moveLeft').addEventListener('click', () => moveSelectedPiece('left'));
+            document.getElementById('moveRight').addEventListener('click', () => moveSelectedPiece('right'));
+            document.getElementById('moveForward').addEventListener('click', () => moveSelectedPiece('forward'));
+            document.getElementById('moveBackward').addEventListener('click', () => moveSelectedPiece('backward'));
+            document.getElementById('rotateBtn').addEventListener('click', rotateSelectedPiece);
+            document.getElementById('changePieceBtn').addEventListener('click', () => selectPiece((gameState.selectedPieceIndex + 1) % gameState.pieces.length));
+            document.getElementById('fineTuneBtn').addEventListener('click', toggleFineTuneMode);
         }
 
         // Start the game when the DOM is ready

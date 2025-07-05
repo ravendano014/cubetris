@@ -489,13 +489,13 @@
         
         function loadSounds() {
             gameState.sounds = {
-                move: new Howl({ src: ['https://assets.codepen.io/21542/howler-push.mp3'] }),
-                rotate: new Howl({ src: ['https://assets.codepen.io/21542/howler-rotate.mp3'] }),
-                select: new Howl({ src: ['https://assets.codepen.io/21542/howler-select.mp3'] }),
-                success: new Howl({ src: ['https://assets.codepen.io/21542/howler-success.mp3'] }),
-                error: new Howl({ src: ['https://assets.codepen.io/21542/howler-error.mp3'] }),
-                scatter: new Howl({ src: ['https://assets.codepen.io/21542/howler-scatter.mp3'] }),
-                click: new Howl({ src: ['https://assets.codepen.io/21542/howler-click.mp3'] })
+                move: new Howl({ src: [''] }),
+                rotate: new Howl({ src: [''] }),
+                select: new Howl({ src: [''] }),
+                success: new Howl({ src: [''] }),
+                error: new Howl({ src: [''] }),
+                scatter: new Howl({ src: [''] }),
+                click: new Howl({ src: [''] })
             };
         }
         
@@ -642,10 +642,16 @@
             blockPositions.forEach(pos => center.addInPlace(pos));
             center.scaleInPlace(1.0 / blockPositions.length);
             
+            // Aleatorizar efectos para esta pieza
+            const useTransparency = Math.random() > 0.7; // 30% de probabilidad
+            const useGradient = Math.random() > 0.6; // 40% de probabilidad
+            const useReflection = Math.random() > 0.5; // 50% de probabilidad
+            const randomEffect = Math.random();
+            
             let normalMaterial;
             let darkerMaterial;
 
-            if (materialType !== 'normal') {
+            if (materialType !== 'normal' || randomEffect > 0.7) {
                 normalMaterial = new BABYLON.PBRMaterial(`normalPBRMat${pieceIndex}`, gameState.scene);
                 darkerMaterial = new BABYLON.PBRMaterial(`darkerPBRMat${pieceIndex}`, gameState.scene);
                 
@@ -655,19 +661,31 @@
                     mat.useRoughnessFromMetallicTextureGreen = true;
                     mat.useMetallnessFromMetallicTextureBlue = true;
                     mat.directIntensity = 1.5;
+                    
+                    // Aplicar efectos aleatorios
+                    if (useTransparency) {
+                        mat.alpha = 0.5 + Math.random() * 0.5; // Transparencia entre 0.5 y 1
+                        mat.transparencyMode = BABYLON.PBRMaterial.PBRTRANSPARENCYMODE_ALPHABLEND;
+                    }
+                    
+                    if (useReflection) {
+                        mat.metallic = 0.5 + Math.random() * 0.5; // 0.5 a 1.0
+                        mat.roughness = 0.1 + Math.random() * 0.4; // 0.1 a 0.5
+                    }
                 });
 
+                // Combinar con efectos específicos del nivel
                 switch(materialType) {
                     case 'metallic':
                         normalMaterial.albedoColor = new BABYLON.Color3(0.9, 0.8, 0.4);
-                        normalMaterial.metallic = 0.9;
-                        normalMaterial.roughness = 0.3;
+                        normalMaterial.metallic = Math.max(0.7, normalMaterial.metallic || 0);
+                        normalMaterial.roughness = Math.min(0.4, normalMaterial.roughness || 1);
                         break;
                     case 'glassy':
                         normalMaterial.albedoColor = new BABYLON.Color3(0.8, 0.9, 1.0);
                         normalMaterial.metallic = 0.0;
                         normalMaterial.roughness = 0.0;
-                        normalMaterial.alpha = 0.7;
+                        normalMaterial.alpha = normalMaterial.alpha || 0.7;
                         normalMaterial.linkRefractionWithTransparency = true;
                         normalMaterial.indexOfRefraction = 0.98;
                         normalMaterial.transparencyMode = BABYLON.PBRMaterial.PBRTRANSPARENCYMODE_ALPHABLEND;
@@ -688,12 +706,8 @@
                         normalMaterial.roughness = 0.4;
                         break;
                 }
-
-                darkerMaterial.albedoColor = normalMaterial.albedoColor.scale(0.6);
-                darkerMaterial.metallic = normalMaterial.metallic;
-                darkerMaterial.roughness = normalMaterial.roughness + 0.2;
-                
             } else {
+                // Material estándar con efectos aleatorios
                 if (textureUrl) {
                     normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
                     normalMaterial.diffuseTexture = new BABYLON.Texture(textureUrl, gameState.scene);
@@ -744,16 +758,83 @@
                             break;
                     }
 
-                    normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
-                    normalMaterial.diffuseColor = pieceColor;
-                    normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-                    normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                    // Aplicar degradado de color si está activado
+                    if (useGradient) {
+                        const gradientFactor = 0.3 + Math.random() * 0.4; // 0.3 a 0.7
+                        const gradientColor = pieceColor.scale(gradientFactor);
+                        
+                        normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
+                        normalMaterial.diffuseColor = pieceColor;
+                        normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                        normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        
+                        // Aplicar transparencia si está activada
+                        if (useTransparency) {
+                            normalMaterial.alpha = 0.6 + Math.random() * 0.4; // 0.6 a 1.0
+                            normalMaterial.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+                        }
+                        
+                        // Aplicar reflexión si está activada
+                        if (useReflection) {
+                            normalMaterial.reflectionTexture = gameState.scene.environmentTexture;
+                            normalMaterial.reflectionFresnel = true;
+                            normalMaterial.reflectionFresnelParameters = new BABYLON.FresnelParameters();
+                            normalMaterial.reflectionFresnelParameters.bias = 0.1;
+                            normalMaterial.reflectionFresnelParameters.power = 2;
+                        }
 
-                    const darkerColor = pieceColor.scale(0.6);
-                    darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
-                    darkerMaterial.diffuseColor = darkerColor;
-                    darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-                    darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
+                        darkerMaterial.diffuseColor = gradientColor;
+                        darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                        darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        
+                        if (useTransparency) {
+                            darkerMaterial.alpha = normalMaterial.alpha * 0.8;
+                            darkerMaterial.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+                        }
+                        
+                        if (useReflection) {
+                            darkerMaterial.reflectionTexture = gameState.scene.environmentTexture;
+                            darkerMaterial.reflectionFresnel = true;
+                            darkerMaterial.reflectionFresnelParameters = new BABYLON.FresnelParameters();
+                            darkerMaterial.reflectionFresnelParameters.bias = 0.2;
+                            darkerMaterial.reflectionFresnelParameters.power = 1.5;
+                        }
+                    } else {
+                        normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
+                        normalMaterial.diffuseColor = pieceColor;
+                        normalMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                        normalMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+
+                        const darkerColor = pieceColor.scale(0.6);
+                        darkerMaterial = new BABYLON.StandardMaterial(`darkerMat${pieceIndex}`, gameState.scene);
+                        darkerMaterial.diffuseColor = darkerColor;
+                        darkerMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                        darkerMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        
+                        // Aplicar transparencia si está activada
+                        if (useTransparency) {
+                            normalMaterial.alpha = 0.6 + Math.random() * 0.4; // 0.6 a 1.0
+                            normalMaterial.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+                            darkerMaterial.alpha = normalMaterial.alpha * 0.8;
+                            darkerMaterial.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+                        }
+                        
+                        // Aplicar reflexión si está activada
+                        if (useReflection) {
+                            normalMaterial.reflectionTexture = gameState.scene.environmentTexture;
+                            normalMaterial.reflectionFresnel = true;
+                            normalMaterial.reflectionFresnelParameters = new BABYLON.FresnelParameters();
+                            normalMaterial.reflectionFresnelParameters.bias = 0.1;
+                            normalMaterial.reflectionFresnelParameters.power = 2;
+                            
+                            darkerMaterial.reflectionTexture = gameState.scene.environmentTexture;
+                            darkerMaterial.reflectionFresnel = true;
+                            darkerMaterial.reflectionFresnelParameters = new BABYLON.FresnelParameters();
+                            darkerMaterial.reflectionFresnelParameters.bias = 0.2;
+                            darkerMaterial.reflectionFresnelParameters.power = 1.5;
+                        }
+                    }
                 }
             }
 
@@ -1736,10 +1817,10 @@
                     const themeToggle = document.getElementById('themeToggle');
                     if (gameState.darkTheme) {
                         document.body.classList.add('dark-theme');
-                        themeToggle.textContent = '☀️ Tema';
+                        themeToggle.textContent = '☀️ Theme';
                     } else {
                         document.body.classList.add('light-theme');
-                        themeToggle.textContent = '🌙 Tema';
+                        themeToggle.textContent = '🌙 Theme';
                     }
                     
                     document.getElementById('scoreDisplay').textContent = `Score: ${gameState.score}`;

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Cubetris - Full Version with Solver and Visual Effects</title>
+    <title>Cubetris - Enhanced Version</title>
     <style>
         html, body {
             overflow: hidden;
@@ -152,7 +152,7 @@
         #onScreenControls {
             position: absolute;
             bottom: 10px;
-            right: 10px;
+            right: 220px;
             z-index: 10;
             display: grid;
             grid-template-columns: repeat(3, 120px);
@@ -177,20 +177,135 @@
         #changePieceBtn { grid-area: 1 / 1 / 1 / 1; background-color: #17b4b2; font-size: 28px;}
         #changePieceBtn:hover { background-color: #00e5ff; }
         #moveUp { grid-area: 1 / 2 / 2 / 3; }
+        #moveDown { grid-area: 3 / 2 / 4 / 3; } 
         #moveLeft { grid-area: 2 / 1 / 3 / 2; }
         #moveRight { grid-area: 2 / 3 / 3 / 4; }
-        #moveDown { grid-area: 3 / 2 / 4 / 3; }
         #moveForward { grid-area: 1 / 3 / 2 / 4; font-size: 28px;}
         #moveBackward { grid-area: 3 / 1 / 4 / 2; font-size: 28px;}
         #rotateBtn { grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; font-size: 28px;}
         #rotateBtn:hover { background-color: #F57C00; }
         #fineTuneBtn { grid-area: 3 / 3 / 3 / 3; background-color: #d20f8a; font-size: 28px;}
         #fineTuneBtn:hover { background-color: #ff0090; }
+        #progressBar {
+            height: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        #progressFill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            text-align: center;
+        }
+        #startScreen h1 {
+            color: #4CAF50;
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        #startScreen p {
+            max-width: 600px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .dark-theme {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        .light-theme {
+            background-color: #f5f5f5;
+            color: #333333;
+        }
+        /* Nuevo estilo para el panel superior central */
+        #topCenterPanel {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 150;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: rgba(0,0,0,0.7);
+            padding: 12px 20px;
+            border-radius: 8px;
+            min-width: 200px;
+        }
+
+        #topCenterPanel p {
+            margin: 4px 0;
+            font-size: 14px;
+            text-align: center;
+            color: white;
+        }
+
+        #topCenterControls {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        #themeToggle, #hintBtn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        #themeToggle:hover, #hintBtn:hover {
+            background-color: #555;
+        }
+
+        /* Ajustar posición de los controles en pantalla */
+        #onScreenControls {
+            right: 20px; /* Volver a la posición original */
+        }
+        #hintBtn {
+            background-color: #9C27B0;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+        #hintBtn:hover {
+            background-color: #7B1FA2;
+        }
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
 </head>
 <body>
+    <div id="startScreen">
+        <h1>Cubetris</h1>
+        <p>Welcome to Cubetris! Your goal is to assemble the scattered pieces back into a complete cube.</p>
+        <p>Controls: Use the on-screen buttons or keyboard (WASD for movement, Q/E for forward/backward, R to rotate, Space to change piece, P to scatter, V to check, M for fine-tune mode).</p>
+        <button id="startButton" style="padding: 15px 30px; font-size: 1.2em;">Start Game</button>
+    </div>
+    
     <canvas id="renderCanvas"></canvas>
     <div id="ui">
         <h2>Cubetris</h2>
@@ -201,6 +316,9 @@
         <div id="gameInfo">
             <p>Level: <span id="levelDisplay">1</span></p>
             <p>Fine Tune: <span id="fineTuneStatus">DEACTIVATED</span></p>
+            <div id="progressBar">
+                <div id="progressFill"></div>
+            </div>
         </div>
         
         <div id="controls">
@@ -217,6 +335,8 @@
     <div id="levelComplete">
         <h2>Level completed!</h2>
         <p>You have correctly assembled the cube.</p>
+        <p>Time: <span id="levelTime">0</span>s</p>
+        <p>Score: +<span id="levelScore">100</span></p>
         <button id="nextLevelBtn">Next level</button>
     </div>
     <div id="errorMsg"></div>
@@ -233,8 +353,19 @@
         <div class="dpad-btn" id="fineTuneBtn">FineTune</div>
     </div>
 
+    <!-- Nuevo panel derecho -->
+    <div id="topCenterPanel">
+        <p>Cube: <span id="cubeSizeDisplay">3x3x3</span></p>
+        <p>Score: <span id="scoreDisplay">0</span></p>
+        <p>Time: <span id="timerDisplay">0s</span></p>
+        <div id="topCenterControls">
+            <button id="hintBtn">💡 Hint</button>
+            <button id="themeToggle">🌙 Theme</button>
+        </div>
+    </div>
+
     <script>
-        // Optimized global variables
+        // Enhanced global variables
         const gameState = {
             canvas: null,
             engine: null,
@@ -243,7 +374,7 @@
             currentLevel: 1,
             pieces: [],
             selectedPieceIndex: 0,
-            targetCubeSize: 4,
+            targetCubeSize: 3,
             isAnimating: false,
             gridSize: 1.0,
             isScattered: false,
@@ -251,21 +382,32 @@
             isFineTuneMode: false,
             lastClickTime: 0,
             doubleClickThreshold: 300,
-            referenceImageTakenForCurrentAssembly: false
+            referenceImageTakenForCurrentAssembly: false,
+            score: 0,
+            levelStartTime: 0,
+            currentTime: 0,
+            timerInterval: null,
+            moveHistory: [],
+            maxUndoSteps: 20,
+            soundEnabled: false,
+            sounds: {},
+            darkTheme: false,
+            correctBlocks: 0,
+            totalBlocks: 0
         };
 
         // Constants
         const COLORS = [
-            new BABYLON.Color3(1, 0, 0),    // Red
-            new BABYLON.Color3(0, 0, 1),    // Blue
-            new BABYLON.Color3(0, 1, 0),    // Green
-            new BABYLON.Color3(1, 1, 0),    // Yellow
-            new BABYLON.Color3(1, 0, 1),    // Magenta
-            new BABYLON.Color3(0, 1, 1),    // Cyan
-            new BABYLON.Color3(1, 0.5, 0),  // Orange
-            new BABYLON.Color3(0.5, 0, 0.5),// Purple
-            new BABYLON.Color3(0, 0.5, 0),  // Dark Green
-            new BABYLON.Color3(0.8, 0.4, 0) // Brown
+            new BABYLON.Color3(1, 0, 0),
+            new BABYLON.Color3(0, 0, 1),
+            new BABYLON.Color3(0, 1, 0),
+            new BABYLON.Color3(1, 1, 0),
+            new BABYLON.Color3(1, 0, 1),
+            new BABYLON.Color3(0, 1, 1),
+            new BABYLON.Color3(1, 0.5, 0),
+            new BABYLON.Color3(0.5, 0, 0.5),
+            new BABYLON.Color3(0, 0.5, 0),
+            new BABYLON.Color3(0.8, 0.4, 0)
         ];
 
         // Texture URLs
@@ -287,20 +429,38 @@
 
         // Scatter directions
         const SCATTER_DIRECTIONS = [
-            new BABYLON.Vector3(1, 0, 0),   // Right
-            new BABYLON.Vector3(-1, 0, 0),  // Left
-            new BABYLON.Vector3(0, 1, 0),   // Up
-            new BABYLON.Vector3(0, -1, 0),  // Down
-            new BABYLON.Vector3(0, 0, 1),   // Forward
-            new BABYLON.Vector3(0, 0, -1)   // Backward
+            new BABYLON.Vector3(1, 0, 0),
+            new BABYLON.Vector3(-1, 0, 0),
+            new BABYLON.Vector3(0, 1, 0),
+            new BABYLON.Vector3(0, -1, 0),
+            new BABYLON.Vector3(0, 0, 1),
+            new BABYLON.Vector3(0, 0, -1)
         ];
 
         // Emissive colors for selection
         const NORMAL_EMISSIVE_COLOR = new BABYLON.Color3(0.3, 0.3, 0.3);
         const FINE_TUNE_EMISSIVE_COLOR = new BABYLON.Color3(0.5, 0.5, 0);
+        const CORRECT_POSITION_COLOR = new BABYLON.Color3(0, 1, 0);
 
         // Initialize the game
         function initGame() {
+            // Load sounds
+            loadSounds();
+            
+            // Setup theme toggle
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            
+            // Setup start button
+            document.getElementById('startButton').addEventListener('click', function() {
+                document.getElementById('startScreen').style.display = 'none';
+                startGame();
+            });
+            
+            // Try to load saved game
+            loadGame();
+        }
+        
+        function startGame() {
             gameState.canvas = document.getElementById('renderCanvas');
             gameState.engine = new BABYLON.Engine(gameState.canvas, true, {
                 preserveDrawingBuffer: true,
@@ -325,6 +485,39 @@
             window.addEventListener('resize', () => {
                 gameState.engine.resize();
             });
+        }
+        
+        function loadSounds() {
+            gameState.sounds = {
+                move: new Howl({ src: ['https://assets.codepen.io/21542/howler-push.mp3'] }),
+                rotate: new Howl({ src: ['https://assets.codepen.io/21542/howler-rotate.mp3'] }),
+                select: new Howl({ src: ['https://assets.codepen.io/21542/howler-select.mp3'] }),
+                success: new Howl({ src: ['https://assets.codepen.io/21542/howler-success.mp3'] }),
+                error: new Howl({ src: ['https://assets.codepen.io/21542/howler-error.mp3'] }),
+                scatter: new Howl({ src: ['https://assets.codepen.io/21542/howler-scatter.mp3'] }),
+                click: new Howl({ src: ['https://assets.codepen.io/21542/howler-click.mp3'] })
+            };
+        }
+        
+        function playSound(soundName) {
+            if (gameState.soundEnabled && gameState.sounds[soundName]) {
+                gameState.sounds[soundName].play();
+            }
+        }
+        
+        function toggleTheme() {
+            gameState.darkTheme = !gameState.darkTheme;
+            const themeToggle = document.getElementById('themeToggle');
+            if (gameState.darkTheme) {
+                document.body.classList.add('dark-theme');
+                document.body.classList.remove('light-theme');
+                themeToggle.textContent = '☀️ Theme';
+            } else {
+                document.body.classList.add('light-theme');
+                document.body.classList.remove('dark-theme');
+                themeToggle.textContent = '🌙 Theme';
+            }
+            saveGame();
         }
 
         function setupCamera() {
@@ -361,14 +554,12 @@
             gameState.scene.autoClear = true;
             gameState.scene.autoClearDepthAndStencil = true;
             
-            // Setup environment for PBR materials
             gameState.scene.environmentTexture = new BABYLON.CubeTexture.CreateFromPrefilteredData(
                 HDRI_URLS[0], 
                 gameState.scene
             );
             gameState.scene.environmentTexture.gammaSpace = false;
             
-            // Enhance image processing for PBR
             gameState.scene.imageProcessingConfiguration.contrast = 1.6;
             gameState.scene.imageProcessingConfiguration.exposure = 1;
             
@@ -394,6 +585,9 @@
             wireMat.emissiveColor = new BABYLON.Color3(0, 1, 0);
             wireMat.alpha = 0.3;
             wireframe.material = wireMat;
+            
+            document.getElementById('cubeSizeDisplay').textContent = 
+                `${gameState.targetCubeSize}x${gameState.targetCubeSize}x${gameState.targetCubeSize}`;
         }
 
         function createGrid() {
@@ -451,13 +645,10 @@
             let normalMaterial;
             let darkerMaterial;
 
-            // Create materials based on the specified type
             if (materialType !== 'normal') {
-                // PBR Materials for special effects
                 normalMaterial = new BABYLON.PBRMaterial(`normalPBRMat${pieceIndex}`, gameState.scene);
                 darkerMaterial = new BABYLON.PBRMaterial(`darkerPBRMat${pieceIndex}`, gameState.scene);
                 
-                // Common PBR settings
                 [normalMaterial, darkerMaterial].forEach(mat => {
                     mat.environmentTexture = gameState.scene.environmentTexture;
                     mat.useAmbientOcclusionFromMetallicTextureRed = true;
@@ -466,17 +657,13 @@
                     mat.directIntensity = 1.5;
                 });
 
-                // Configure based on effect type
                 switch(materialType) {
                     case 'metallic':
-                        // Gold metallic
                         normalMaterial.albedoColor = new BABYLON.Color3(0.9, 0.8, 0.4);
                         normalMaterial.metallic = 0.9;
                         normalMaterial.roughness = 0.3;
                         break;
-                        
                     case 'glassy':
-                        // Glass/transparent effect
                         normalMaterial.albedoColor = new BABYLON.Color3(0.8, 0.9, 1.0);
                         normalMaterial.metallic = 0.0;
                         normalMaterial.roughness = 0.0;
@@ -485,21 +672,16 @@
                         normalMaterial.indexOfRefraction = 0.98;
                         normalMaterial.transparencyMode = BABYLON.PBRMaterial.PBRTRANSPARENCYMODE_ALPHABLEND;
                         break;
-                        
                     case 'brightMetallic':
-                        // Shiny silver
                         normalMaterial.albedoColor = new BABYLON.Color3(0.95, 0.95, 0.99);
                         normalMaterial.metallic = 1.0;
                         normalMaterial.roughness = 0.1;
                         break;
-                        
                     case 'texturedMetallic':
-                        // Textured metal
                         if (textureUrl) {
                             normalMaterial.albedoTexture = new BABYLON.Texture(textureUrl, gameState.scene);
                             normalMaterial.metallicTexture = normalMaterial.albedoTexture;
                         } else {
-                            // Copper fallback
                             normalMaterial.albedoColor = new BABYLON.Color3(0.7, 0.4, 0.2);
                         }
                         normalMaterial.metallic = 0.9;
@@ -507,13 +689,11 @@
                         break;
                 }
 
-                // Configure darker material
                 darkerMaterial.albedoColor = normalMaterial.albedoColor.scale(0.6);
                 darkerMaterial.metallic = normalMaterial.metallic;
                 darkerMaterial.roughness = normalMaterial.roughness + 0.2;
                 
             } else {
-                // Standard material (original behavior)
                 if (textureUrl) {
                     normalMaterial = new BABYLON.StandardMaterial(`normalMat${pieceIndex}`, gameState.scene);
                     normalMaterial.diffuseTexture = new BABYLON.Texture(textureUrl, gameState.scene);
@@ -530,7 +710,6 @@
                     darkerMaterial.diffuseTexture.uScale = 2;
                     darkerMaterial.diffuseTexture.vScale = 2;
                 } else {
-                    // Existing color logic for normal mode or other color modes
                     let pieceColor;
                     const randomComponent = 0.5 + Math.random() * 0.5;
 
@@ -584,7 +763,6 @@
                 center.z * gameState.gridSize
             );
             
-            // Create blocks
             blockPositions.forEach((pos, index) => {
                 const block = BABYLON.MeshBuilder.CreateBox(
                     `block${pieceIndex}_${index}`, 
@@ -597,17 +775,16 @@
                 block.position = relativePos.clone();
                 piece.originalPositions.push(relativePos.clone());
                 
-                // Determine if this block is on the outer layer of the final cube
                 const absoluteBlockX = pos.x;
                 const absoluteBlockY = pos.y;
                 const absoluteBlockZ = pos.z;
                 
-                const halfTargetSize = gameState.targetCubeSize / 2;
+                const halfTargetSize = (gameState.targetCubeSize - 1) / 2;
 
                 let isOuterBlock = false;
-                if (Math.abs(absoluteBlockX) === halfTargetSize - 0.5 ||
-                    Math.abs(absoluteBlockY) === halfTargetSize - 0.5 ||
-                    Math.abs(absoluteBlockZ) === halfTargetSize - 0.5) {
+                if (Math.abs(absoluteBlockX) === halfTargetSize ||
+                    Math.abs(absoluteBlockY) === halfTargetSize ||
+                    Math.abs(absoluteBlockZ) === halfTargetSize) {
                     isOuterBlock = true;
                 }
 
@@ -637,7 +814,6 @@
                 if (numPieces > 12) numPieces = 12;
             }
             
-            // Determine material effect based on level
             let materialEffect = 'normal';
             const effectTypes = ['metallic', 'glassy', 'brightMetallic', 'texturedMetallic'];
             
@@ -647,9 +823,8 @@
             }
             
             const allBlocks = [];
-            const halfSize = Math.floor(gameState.targetCubeSize / 2) - 0.5;
+            const halfSize = (gameState.targetCubeSize - 1) / 2;
             
-            // Generate all possible positions
             for (let x = -halfSize; x <= halfSize; x++) {
                 for (let y = -halfSize; y <= halfSize; y++) {
                     for (let z = -halfSize; z <= halfSize; z++) {
@@ -658,7 +833,6 @@
                 }
             }
             
-            // Divide into pieces ensuring adjacency
             let blocksPerPiece = Math.floor(allBlocks.length / numPieces);
             if (level > 14) {
                 const minBlocks = Math.max(3, Math.floor(blocksPerPiece * 0.7));
@@ -675,11 +849,9 @@
                     pieceBlocks.push(allBlocks[startIndex]);
                     allBlocks.splice(startIndex, 1);
                     
-                    // Ensure adjacent blocks
                     for (let j = 1; j < blocksToTake && allBlocks.length > 0; j++) {
                         let addedBlock = false;
                         
-                        // Search for adjacent first
                         for (let k = 0; k < allBlocks.length && !addedBlock; k++) {
                             const testBlock = allBlocks[k];
                             
@@ -693,7 +865,6 @@
                             }
                         }
                         
-                        // If no adjacents, add any block
                         if (!addedBlock && allBlocks.length > 0) {
                             const randomIndex = Math.floor(Math.random() * allBlocks.length);
                             pieceBlocks.push(allBlocks[randomIndex]);
@@ -704,6 +875,10 @@
                 
                 createPieces(pieceBlocks, i, levelColorMode, textureToUse, materialEffect);
             }
+            
+            gameState.totalBlocks = gameState.targetCubeSize * gameState.targetCubeSize * gameState.targetCubeSize;
+            gameState.correctBlocks = 0;
+            updateProgressBar();
         }
 
         function areBlocksAdjacent(block1, block2) {
@@ -734,12 +909,14 @@
                 const levelComplete = document.getElementById('levelComplete');
                 const errorMsg = document.getElementById('errorMsg');
                 const onScreenControls = document.getElementById('onScreenControls');
+                const rightPanel = document.getElementById('rightPanel');
 
                 if (gameInfo) gameInfo.style.display = 'none';
                 if (controls) controls.style.display = 'none';
                 if (levelComplete) levelComplete.style.display = 'none';
                 if (errorMsg) errorMsg.style.display = 'none';
                 if (onScreenControls) onScreenControls.style.display = 'none';
+                if (rightPanel) rightPanel.style.display = 'none';
 
                 setTimeout(() => {
                     BABYLON.ScreenshotTools.CreateScreenshot(gameState.engine, gameState.camera, { width: 512, height: 512, precision: 1 }, (data) => {
@@ -751,6 +928,7 @@
                         if (gameInfo) gameInfo.style.display = 'block';
                         if (controls) controls.style.display = 'block';
                         if (onScreenControls) onScreenControls.style.display = 'grid';
+                        if (rightPanel) rightPanel.style.display = 'flex';
 
                         gameState.referenceImageTakenForCurrentAssembly = true;
                     });
@@ -760,6 +938,10 @@
 
         function scatterPieces() {
             if (gameState.isScattered || gameState.isAnimating) return;
+            
+            playSound('scatter');
+            
+            saveMoveToHistory();
             
             const minDistance = gameState.targetCubeSize * gameState.gridSize * 1.5;
             const maxDistance = gameState.targetCubeSize * gameState.gridSize * 2.5;
@@ -805,6 +987,8 @@
             });
             
             gameState.isScattered = true;
+            gameState.correctBlocks = 0;
+            updateProgressBar();
         }
 
         function updateBlockPositions(piece) {
@@ -821,6 +1005,8 @@
 
         function selectPiece(index, isDoubleClick = false) {
             if (gameState.isAnimating || index < 0 || index >= gameState.pieces.length) return;
+            
+            playSound('select');
             
             if (gameState.pieces[gameState.selectedPieceIndex]) {
                 gameState.pieces[gameState.selectedPieceIndex].blocks.forEach(block => {
@@ -852,11 +1038,20 @@
             });
 
             document.getElementById('fineTuneStatus').textContent = gameState.isFineTuneMode ? 'ACTIVATED' : 'DEACTIVATED';
+            
+            if (gameState.isScattered) {
+                const targetPosition = selectedPiece.position.clone();
+                const currentTarget = gameState.camera.target;
+                const newTarget = BABYLON.Vector3.Lerp(currentTarget, targetPosition, 0.2);
+                gameState.camera.setTarget(newTarget);
+            }
         }
 
         function toggleFineTuneMode() {
             if (gameState.pieces.length === 0) return;
 
+            playSound('click');
+            
             gameState.isFineTuneMode = !gameState.isFineTuneMode;
             const selectedPiece = gameState.pieces[gameState.selectedPieceIndex];
             if (selectedPiece) {
@@ -875,6 +1070,10 @@
 
         function moveSelectedPiece(direction) {
             if (gameState.isAnimating || !gameState.isScattered) return;
+            
+            playSound('move');
+            
+            saveMoveToHistory();
             
             const piece = gameState.pieces[gameState.selectedPieceIndex];
             const newPosition = piece.position.clone();
@@ -911,11 +1110,14 @@
             
             if (checkCollision(piece, newPosition)) {
                 showError("Movement not allowed! There is a collision.");
+                playSound('error');
                 return;
             }
             
             piece.position = newPosition;
             animatePieceToPosition(piece);
+            
+            checkCorrectBlocks();
         }
 
         function checkCollision(piece, newPosition) {
@@ -954,6 +1156,10 @@
         function rotateSelectedPiece() {
             if (gameState.isAnimating || !gameState.isScattered) return;
             
+            playSound('rotate');
+            
+            saveMoveToHistory();
+            
             const piece = gameState.pieces[gameState.selectedPieceIndex];
             const oldRotation = piece.rotation;
             
@@ -966,10 +1172,13 @@
                 piece.rotation = oldRotation;
                 updateBlockPositions(piece);
                 showError("Rotation not allowed! There is a collision.");
+                playSound('error');
                 return;
             }
             
             animateRotation(piece, oldRotation);
+            
+            checkCorrectBlocks();
         }
 
         function animatePieceToPosition(piece, duration = 200, onComplete = null) {
@@ -1029,8 +1238,11 @@
         function solvePuzzle() {
             if (gameState.isAnimating || !gameState.isScattered) {
                 showError("Cannot solve now");
+                playSound('error');
                 return;
             }
+            
+            playSound('click');
             
             gameState.isAnimating = true;
             
@@ -1110,9 +1322,9 @@
             for (let i = 0; i < targetSize; i++) {
                 for (let j = 0; j < targetSize; j++) {
                     for (let k = 0; k < targetSize; k++) {
-                        const gridX = (i - targetSize / 2 + 0.5) * gameState.gridSize;
-                        const gridY = (j - targetSize / 2 + 0.5) * gameState.gridSize;
-                        const gridZ = (k - targetSize / 2 + 0.5) * gameState.gridSize;
+                        const gridX = (i - (targetSize - 1) / 2) * gameState.gridSize;
+                        const gridY = (j - (targetSize - 1) / 2) * gameState.gridSize;
+                        const gridZ = (k - (targetSize - 1) / 2) * gameState.gridSize;
                         const posKey = `${gridX}_${gridY}_${gridZ}`;
                         occupiedGrid.set(posKey, null);
                     }
@@ -1170,19 +1382,85 @@
             if (outOfBoundsPieces.size > 0) {
                 showError("One or more pieces are outside the grid cube, or rotate the piece inside the cube and retry!");
                 outOfBoundsPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0)));
+                playSound('error');
             } else if (overlappingPieces.size > 0) {
                 showError("There are overlapping blocks!");
                 overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0.5, 0)));
+                playSound('error');
             } else if (currentBlockCount !== expectedTotalBlocks) {
                 showError("The cube is not correctly assembled. Blocks are missing or misplaced.");
+                playSound('error');
             } else {
-                document.getElementById('levelComplete').style.display = 'block';
+                levelComplete();
             }
+        }
+
+        function checkCorrectBlocks() {
+            const targetSize = gameState.targetCubeSize;
+            const halfSize = (targetSize * gameState.gridSize) / 2;
+            const boundaryTolerance = 0.1 * gameState.gridSize;
+            
+            let correctCount = 0;
+            const occupiedGrid = new Map();
+
+            for (let i = 0; i < targetSize; i++) {
+                for (let j = 0; j < targetSize; j++) {
+                    for (let k = 0; k < targetSize; k++) {
+                        const gridX = (i - (targetSize - 1) / 2) * gameState.gridSize;
+                        const gridY = (j - (targetSize - 1) / 2) * gameState.gridSize;
+                        const gridZ = (k - (targetSize - 1) / 2) * gameState.gridSize;
+                        const posKey = `${gridX}_${gridY}_${gridZ}`;
+                        occupiedGrid.set(posKey, false);
+                    }
+                }
+            }
+
+            for (const piece of gameState.pieces) {
+                for (const block of piece.blocks) {
+                    const rotatedBlockLocalPos = block.position;
+                    const actualBlockGlobalX = piece.position.x + rotatedBlockLocalPos.x;
+                    const actualBlockGlobalY = piece.position.y + rotatedBlockLocalPos.y;
+                    const actualBlockGlobalZ = piece.position.z + rotatedBlockLocalPos.z;
+                    
+                    const assembledBlockGlobalX = piece.assembledPosition.x + rotatedBlockLocalPos.x;
+                    const assembledBlockGlobalY = piece.assembledPosition.y + rotatedBlockLocalPos.y;
+                    const assembledBlockGlobalZ = piece.assembledPosition.z + rotatedBlockLocalPos.z;
+                    
+                    const dx = Math.abs(actualBlockGlobalX - assembledBlockGlobalX);
+                    const dy = Math.abs(actualBlockGlobalY - assembledBlockGlobalY);
+                    const dz = Math.abs(actualBlockGlobalZ - assembledBlockGlobalZ);
+                    
+                    if (dx < boundaryTolerance && dy < boundaryTolerance && dz < boundaryTolerance) {
+                        const posKey = `${assembledBlockGlobalX}_${assembledBlockGlobalY}_${assembledBlockGlobalZ}`;
+                        if (!occupiedGrid.get(posKey)) {
+                            occupiedGrid.set(posKey, true);
+                            correctCount++;
+                            block.material.emissiveColor = CORRECT_POSITION_COLOR;
+                            setTimeout(() => {
+                                if (piece.index === gameState.selectedPieceIndex) {
+                                    block.material.emissiveColor = gameState.isFineTuneMode ? FINE_TUNE_EMISSIVE_COLOR : NORMAL_EMISSIVE_COLOR;
+                                } else {
+                                    block.material.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                                }
+                            }, 500);
+                        }
+                    }
+                }
+            }
+            
+            gameState.correctBlocks = correctCount;
+            updateProgressBar();
+        }
+        
+        function updateProgressBar() {
+            const progress = (gameState.correctBlocks / gameState.totalBlocks) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
         }
 
         function checkProximityAndOverlap() {
             if (!gameState.isScattered) {
                 showError("Pieces are not scattered! Use the 'Scatter' button first.");
+                playSound('error');
                 return;
             }
 
@@ -1230,11 +1508,33 @@
 
             if (hasOverlap) {
                 showError("There are overlapping blocks!");
+                playSound('error');
             } else if (isTooFar) {
                 showError("One or more pieces are too far from the cube!");
+                playSound('error');
             } else {
-                document.getElementById('levelComplete').style.display = 'block';
+                levelComplete();
             }
+        }
+
+        function levelComplete() {
+            playSound('success');
+            
+            const timeElapsed = Math.floor((Date.now() - gameState.levelStartTime) / 1000);
+            const timeBonus = Math.max(0, 300 - timeElapsed);
+            const levelScore = 100 + timeBonus + (gameState.currentLevel * 10);
+            
+            gameState.score += levelScore;
+            
+            document.getElementById('levelTime').textContent = timeElapsed;
+            document.getElementById('levelScore').textContent = levelScore;
+            document.getElementById('levelComplete').style.display = 'block';
+            
+            document.getElementById('scoreDisplay').textContent = `Score: ${gameState.score}`;
+            
+            clearInterval(gameState.timerInterval);
+            
+            saveGame();
         }
 
         function highlightPiece(pieceToHighlight, color, duration = 500) {
@@ -1262,11 +1562,13 @@
         }
 
         function nextLevel() {
+            playSound('click');
             gameState.currentLevel++;
             startLevel(gameState.currentLevel);
         }
 
         function resetCamera() {
+            playSound('click');
             gameState.camera.alpha = -Math.PI / 2;
             gameState.camera.beta = Math.PI / 3;
             gameState.camera.radius = 20;
@@ -1274,11 +1576,21 @@
         }
 
         function resetGame() {
+            playSound('click');
             gameState.currentLevel = 1;
+            gameState.score = 0;
+            document.getElementById('scoreDisplay').textContent = `Score: ${gameState.score}`;
             startLevel(gameState.currentLevel);
         }
 
         function startLevel(level) {
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+            }
+            
+            gameState.levelStartTime = Date.now();
+            gameState.timerInterval = setInterval(updateTimer, 1000);
+            
             while (gameState.scene.meshes.length > 0) {
                 gameState.scene.meshes[0].dispose();
             }
@@ -1288,6 +1600,7 @@
             gameState.isScattered = false;
             gameState.isFineTuneMode = false;
             gameState.referenceImageTakenForCurrentAssembly = false;
+            gameState.moveHistory = [];
 
             let levelColorMode = 'normal';
             let textureToUse = null;
@@ -1310,22 +1623,27 @@
                 }
             }
 
-            if (level <= 5) {
-                gameState.targetCubeSize = 2;
-            } else if (level <= 15) {
+            if (level <= 3) {
+                gameState.targetCubeSize = 3;
+            } else if (level <= 6) {
                 gameState.targetCubeSize = 4;
-            } else if (level <= 35) {
+            } else if (level <= 10) {
+                gameState.targetCubeSize = 5;
+            } else if (level <= 15) {
                 gameState.targetCubeSize = 6;
-            } else if (level <= 55) {
+            } else if (level <= 20) {
+                gameState.targetCubeSize = 7;
+            } else if (level <= 25) {
                 gameState.targetCubeSize = 8;
-            } else if (level <= 75) {
+            } else if (level <= 30) {
+                gameState.targetCubeSize = 9;
+            } else if (level <= 35) {
                 gameState.targetCubeSize = 10;
+            } else if (level <= 40) {
+                gameState.targetCubeSize = 11;
             } else {
-                gameState.targetCubeSize = Math.floor(Math.random() * 4) * 2 + 4;
-                
-                if(level > 79) { gameState.targetCubeSize =  gameState.targetCubeSize + 2}
-
-                if (gameState.targetCubeSize > 12) gameState.targetCubeSize = 12;
+                const sizes = [3, 5, 7, 9, 11];
+                gameState.targetCubeSize = sizes[Math.floor(Math.random() * sizes.length)];
             }
             
             document.getElementById('levelDisplay').textContent = gameState.currentLevel;
@@ -1345,6 +1663,132 @@
             captureReferenceImage();
             selectPiece(0);
         }
+        
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - gameState.levelStartTime) / 1000);
+            document.getElementById('timerDisplay').textContent = `Time: ${elapsed}s`;
+        }
+        
+        function saveMoveToHistory() {
+            if (gameState.pieces.length === 0) return;
+            
+            const state = gameState.pieces.map(piece => ({
+                position: piece.position.clone(),
+                rotation: piece.rotation,
+                index: piece.index
+            }));
+            
+            gameState.moveHistory.push(state);
+            
+            if (gameState.moveHistory.length > gameState.maxUndoSteps) {
+                gameState.moveHistory.shift();
+            }
+        }
+        
+        function undoLastMove() {
+            if (gameState.isAnimating || gameState.moveHistory.length === 0) {
+                playSound('error');
+                return;
+            }
+            
+            playSound('click');
+            
+            const lastState = gameState.moveHistory.pop();
+            
+            lastState.forEach(pieceState => {
+                const piece = gameState.pieces[pieceState.index];
+                piece.position = pieceState.position.clone();
+                piece.rotation = pieceState.rotation;
+                
+                piece.root.position = piece.position.clone();
+                piece.root.rotation.y = piece.rotation;
+                updateBlockPositions(piece);
+                
+                animatePieceToPosition(piece);
+            });
+            
+            checkCorrectBlocks();
+        }
+        
+        function saveGame() {
+            try {
+                const saveData = {
+                    level: gameState.currentLevel,
+                    score: gameState.score,
+                    darkTheme: gameState.darkTheme,
+                    soundEnabled: gameState.soundEnabled
+                };
+                localStorage.setItem('cubetrisSave', JSON.stringify(saveData));
+            } catch (e) {
+                console.error("Failed to save game:", e);
+            }
+        }
+        
+        function loadGame() {
+            try {
+                const saveData = JSON.parse(localStorage.getItem('cubetrisSave'));
+                if (saveData) {
+                    gameState.currentLevel = saveData.level || 1;
+                    gameState.score = saveData.score || 0;
+                    gameState.darkTheme = saveData.darkTheme || false;
+                    gameState.soundEnabled = saveData.soundEnabled || false;
+                    
+                    const themeToggle = document.getElementById('themeToggle');
+                    if (gameState.darkTheme) {
+                        document.body.classList.add('dark-theme');
+                        themeToggle.textContent = '☀️ Tema';
+                    } else {
+                        document.body.classList.add('light-theme');
+                        themeToggle.textContent = '🌙 Tema';
+                    }
+                    
+                    document.getElementById('scoreDisplay').textContent = `Score: ${gameState.score}`;
+                }
+            } catch (e) {
+                console.error("Failed to load game:", e);
+            }
+        }
+        
+        function giveHint() {
+            if (gameState.isAnimating || !gameState.isScattered) {
+                playSound('error');
+                return;
+            }
+            
+            playSound('click');
+            
+            let closestPiece = null;
+            let minDistance = Infinity;
+            
+            for (const piece of gameState.pieces) {
+                const distance = BABYLON.Vector3.Distance(piece.position, piece.assembledPosition);
+                if (distance < minDistance && distance > 0.1) {
+                    minDistance = distance;
+                    closestPiece = piece;
+                }
+            }
+            
+            if (closestPiece) {
+                selectPiece(closestPiece.index);
+                
+                highlightPiece(closestPiece, new BABYLON.Color3(1, 1, 0), 2000);
+                
+                const direction = closestPiece.assembledPosition.subtract(closestPiece.position).normalize();
+                let directionText = "";
+                
+                if (Math.abs(direction.x) > Math.abs(direction.y) && Math.abs(direction.x) > Math.abs(direction.z)) {
+                    directionText = direction.x > 0 ? "Move RIGHT" : "Move LEFT";
+                } else if (Math.abs(direction.y) > Math.abs(direction.z)) {
+                    directionText = direction.y > 0 ? "Move UP" : "Move DOWN";
+                } else {
+                    directionText = direction.z > 0 ? "Move FORWARD" : "Move BACKWARD";
+                }
+                
+                showError(`Hint: Select piece ${closestPiece.index + 1}. ${directionText}`);
+            } else {
+                showError("All pieces are already in position!");
+            }
+        }
 
         function setupControls() {
             const keyMap = {
@@ -1359,7 +1803,9 @@
                 ' ': 'change',
                 'm': 'toggleFineTune',
                 'v': 'check',
-                'k': 'okForMe'
+                'k': 'okForMe',
+                'u': 'undo',
+                'h': 'hint'
             };
             
             document.addEventListener('keydown', (e) => {
@@ -1374,6 +1820,10 @@
                     checkPuzzleComplete();
                 } else if (action === 'okForMe') {
                     checkProximityAndOverlap();
+                } else if (action === 'undo') {
+                    undoLastMove();
+                } else if (action === 'hint') {
+                    giveHint();
                 } else {
                     switch (action) {
                         case 'up':
@@ -1443,6 +1893,7 @@
             document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
             document.getElementById('solveBtn').addEventListener('click', solvePuzzle);
             document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
+            document.getElementById('hintBtn').addEventListener('click', giveHint);
 
             document.getElementById('moveUp').addEventListener('click', () => moveSelectedPiece('up'));
             document.getElementById('moveDown').addEventListener('click', () => moveSelectedPiece('down'));
@@ -1455,7 +1906,6 @@
             document.getElementById('fineTuneBtn').addEventListener('click', toggleFineTuneMode);
         }
 
-        // Start the game when the DOM is ready
         window.addEventListener('DOMContentLoaded', initGame);
     </script>
 </body>

@@ -412,14 +412,10 @@
 
         // Texture URLs
         const TEXTURE_URLS = [
-            "https://www.babylonjs-playground.com/textures/icons/Play.png",
-            "https://www.babylonjs-playground.com/textures/lensdirt.jpg",
-            "https://www.babylonjs-playground.com/textures/mask.png",
-            "https://www.babylonjs-playground.com/textures/rockn.png",
-            "https://www.babylonjs-playground.com/textures/normal.png",
-            "https://www.babylonjs-playground.com/textures/flare.png",
-            "https://www.babylonjs-playground.com/textures/amiga.jpg",
-            "https://www.babylonjs-playground.com/textures/Dot.png"
+            "https://raw.githubusercontent.com/ravendano014/cubetris/refs/heads/main/cube.jpeg",
+            "https://i.imgur.com/lXehwjZ.jpg",
+            "https://i.imgur.com/7jDxfj0.jpg"
+
         ];
 
         // HDRI Environment Textures for PBR
@@ -827,7 +823,6 @@
                             normalMaterial.reflectionFresnelParameters = new BABYLON.FresnelParameters();
                             normalMaterial.reflectionFresnelParameters.bias = 0.1;
                             normalMaterial.reflectionFresnelParameters.power = 2;
-                            
                             darkerMaterial.reflectionTexture = gameState.scene.environmentTexture;
                             darkerMaterial.reflectionFresnel = true;
                             darkerMaterial.reflectionFresnelParameters = new BABYLON.FresnelParameters();
@@ -837,21 +832,33 @@
                     }
                 }
             }
+            
+            // Define FaceUV if a specific texture is used for it
+            let boxOptions = {size: 0.9 * gameState.gridSize};
+            if (textureUrl === "https://raw.githubusercontent.com/ravendano014/cubetris/refs/heads/main/cube.jpeg") {
+                var columns = 12;
+                var rows = 2;
+                var faceUV = new Array(6);
+                for (var i = 0; i < 6; i++) {
+                    faceUV[i] = new BABYLON.Vector4(i / columns, 0, (i + 1) / columns, 1 / rows);
+                }
+                boxOptions.faceUV = faceUV;
+                boxOptions.wrap = true;
+            }
 
             const pieceAssembledGlobalPosition = new BABYLON.Vector3(
                 center.x * gameState.gridSize,
                 center.y * gameState.gridSize,
                 center.z * gameState.gridSize
             );
-            
+
             blockPositions.forEach((pos, index) => {
                 const block = BABYLON.MeshBuilder.CreateBox(
                     `block${pieceIndex}_${index}`, 
-                    {size: 0.9 * gameState.gridSize}, 
+                    boxOptions, 
                     gameState.scene
                 );
                 block.parent = piece.root;
-                
                 const relativePos = pos.subtract(center);
                 block.position = relativePos.clone();
                 piece.originalPositions.push(relativePos.clone());
@@ -859,26 +866,20 @@
                 const absoluteBlockX = pos.x;
                 const absoluteBlockY = pos.y;
                 const absoluteBlockZ = pos.z;
-                
-                const halfTargetSize = (gameState.targetCubeSize - 1) / 2;
 
+                const halfTargetSize = (gameState.targetCubeSize - 1) / 2;
                 let isOuterBlock = false;
-                if (Math.abs(absoluteBlockX) === halfTargetSize ||
-                    Math.abs(absoluteBlockY) === halfTargetSize ||
-                    Math.abs(absoluteBlockZ) === halfTargetSize) {
+                if (Math.abs(absoluteBlockX) === halfTargetSize || Math.abs(absoluteBlockY) === halfTargetSize || Math.abs(absoluteBlockZ) === halfTargetSize) {
                     isOuterBlock = true;
                 }
-
+                
                 block.material = isOuterBlock ? darkerMaterial : normalMaterial;
-                
-                block.isPickable = true; 
-                block.pieceIndex = pieceIndex; 
-                
+                block.isPickable = true;
+                block.pieceIndex = pieceIndex;
                 piece.blocks.push(block);
             });
-            
+
             piece.assembledPosition = pieceAssembledGlobalPosition;
-            
             gameState.pieces.push(piece);
             return piece;
         }
@@ -898,9 +899,15 @@
             let materialEffect = 'normal';
             const effectTypes = ['metallic', 'glassy', 'brightMetallic', 'texturedMetallic'];
             
-            if (level % 2 === 0 && level > 1) {
+            if (level % 5 === 0 && level > 1) {
                 const effectIndex = (Math.floor((level / 2) - 1) % effectTypes.length);
                 materialEffect = effectTypes[effectIndex];
+
+            }
+            
+            if (level === 3) {
+                materialEffect = 'normal';
+                textureToUse = "https://raw.githubusercontent.com/ravendano014/cubetris/refs/heads/main/cube.jpeg";
             }
             
             const allBlocks = [];
@@ -1704,7 +1711,14 @@
                 }
             }
 
-            if (level <= 3) {
+            if (level === 1) {
+                levelColorMode = 'normal';
+                gameState.targetCubeSize = 2;
+            } else if (level === 3) {
+                levelColorMode = 'normal';
+                gameState.targetCubeSize = 3;
+                textureToUse = "https://raw.githubusercontent.com/ravendano014/cubetris/refs/heads/main/cube.jpeg";
+            } else if (level <= 4) {
                 gameState.targetCubeSize = 3;
             } else if (level <= 6) {
                 gameState.targetCubeSize = 4;

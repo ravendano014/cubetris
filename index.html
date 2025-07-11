@@ -232,7 +232,6 @@
             background-color: #f5f5f5;
             color: #333333;
         }
-        /* Nuevo estilo para el panel superior central */
         #topCenterPanel {
             position: absolute;
             top: 20px;
@@ -276,9 +275,8 @@
             background-color: #555;
         }
 
-        /* Ajustar posición de los controles en pantalla */
         #onScreenControls {
-            right: 20px; /* Volver a la posición original */
+            right: 20px;
         }
         #hintBtn {
             background-color: #9C27B0;
@@ -359,7 +357,6 @@
         <div class="dpad-btn" id="fineTuneBtn">FineTune</div>
     </div>
 
-    <!-- Nuevo panel derecho -->
     <div id="topCenterPanel">
         <p>Cube: <span id="cubeSizeDisplay">3x3x3</span></p>
         <p>Score: <span id="scoreDisplay">0</span></p>
@@ -422,7 +419,6 @@
             "https://raw.githubusercontent.com/ravendano014/cubetris/refs/heads/main/cube.jpeg",
             "https://i.imgur.com/lXehwjZ.jpg",
             "https://i.imgur.com/7jDxfj0.jpg"
-
         ];
 
         // HDRI Environment Textures for PBR
@@ -860,11 +856,25 @@
             );
 
             blockPositions.forEach((pos, index) => {
-                const block = BABYLON.MeshBuilder.CreateBox(
-                    `block${pieceIndex}_${index}`, 
-                    boxOptions, 
-                    gameState.scene
-                );
+                let block;
+                if (gameState.currentLevel % 4 === 0) {
+                    // Crear esferas para el nivel 4
+                    block = BABYLON.MeshBuilder.CreateSphere(
+                        `block${pieceIndex}_${index}`, 
+                        { 
+                            diameter: 0.9 * gameState.gridSize,
+                            segments: 16
+                        }, 
+                        gameState.scene
+                    );
+                } else {
+                    // Crear cubos para otros niveles
+                    block = BABYLON.MeshBuilder.CreateBox(
+                        `block${pieceIndex}_${index}`, 
+                        boxOptions, 
+                        gameState.scene
+                    );
+                }
                 block.parent = piece.root;
                 const relativePos = pos.subtract(center);
                 block.position = relativePos.clone();
@@ -909,7 +919,6 @@
             if (level % 5 === 0 && level > 1) {
                 const effectIndex = (Math.floor((level / 2) - 1) % effectTypes.length);
                 materialEffect = effectTypes[effectIndex];
-
             }
             
             if (level === 3) {
@@ -1112,7 +1121,7 @@
 
             if (index === gameState.selectedPieceIndex && isDoubleClick) {
                 gameState.isFineTuneMode = !gameState.isFineTuneMode;
-            } else {
+            } else if (index !== gameState.selectedPieceIndex) {
                 gameState.isFineTuneMode = false;
             }
 
@@ -1478,7 +1487,7 @@
                 playSound('error');
             } else if (overlappingPieces.size > 0) {
                 showError("There are overlapping blocks!");
-                overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0.5, 0)));
+                overlappingPieces.forEach(p => highlightPiece(p, new BABYLON.Color3(1, 0, 0)));
                 playSound('error');
             } else if (currentBlockCount !== expectedTotalBlocks) {
                 showError("The cube is not correctly assembled. Blocks are missing or misplaced.");

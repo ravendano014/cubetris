@@ -39,11 +39,11 @@ The goal is to correctly position and orient all the scattered pieces to form a 
 
 ## Setup
 
-To run Cubetris locally, simply open the `cubetris.html` file in your web browser. All necessary scripts and styles are embedded or linked from CDNs within the HTML file itself.
+To run Cubetris locally, simply open the `index.html` file in your web browser. All necessary scripts and styles are embedded or linked from CDNs within the HTML file itself.
 
 ## Project Structure
 
-The project consists of a single `cubetris.html` file which includes all the HTML, CSS, and JavaScript code for the game.
+The project consists of a single `index.html` file which includes all the HTML, CSS, and JavaScript code for the game.
 
 ## Future Enhancements
 
